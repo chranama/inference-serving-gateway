@@ -11,11 +11,22 @@ Go service intended to front inference backends with production-style serving/ru
 
 ## Status
 
-Scaffold only. This repository is being created in isolation before `llm-extraction-platform` adds explicit gateway-aware support in a future `v3.0.0` release.
+Early MVP implemented. This repository now includes:
+
+- a runnable Go HTTP service
+- health, readiness, and metrics endpoints
+- sync and async forwarding routes
+- request and trace propagation
+- timeout handling
+- coarse route policy toggles
+- request-size admission control
+- concurrency and rate limiting
+- mock-upstream proof scripts
+- Go unit and integration tests
 
 Current plan:
-1. build the gateway against a mock upstream
-2. validate sync and async forwarding behavior
+1. continue iterating against the mock upstream
+2. harden proof artifacts and local deployment story
 3. integrate with `llm-extraction-platform`
 4. add a canonical proof stack showing end-to-end trace continuity
 
@@ -36,6 +47,43 @@ Initial v1 focus:
 - `GET /healthz`
 - `GET /readyz`
 - `GET /metrics`
+
+## Quick Start
+
+Install Go dependencies and run the test suite:
+
+```bash
+go mod tidy
+go test ./...
+```
+
+Run the gateway against the bundled mock upstream:
+
+```bash
+python3 proof/mock_upstream.py --port 18081
+GATEWAY_UPSTREAM_BASE_URL=http://127.0.0.1:18081 go run ./cmd/gateway
+```
+
+Main endpoints:
+
+- `GET /healthz`
+- `GET /readyz`
+- `GET /metrics`
+- `POST /v1/extract`
+- `POST /v1/extract/jobs`
+- `GET /v1/extract/jobs/{job_id}`
+
+Generate local proof artifacts:
+
+```bash
+proof/generate_mock_proof.sh
+```
+
+Docker Compose local stack:
+
+```bash
+docker compose -f deployments/docker-compose.mock.yml up --build
+```
 
 ## Repository Layout
 
@@ -58,10 +106,33 @@ tests/                    integration and end-to-end tests
 
 ## Near-Term Deliverables
 
-- Go module and HTTP server bootstrap
-- mock upstream integration tests
-- request ID propagation
-- timeout budgets
-- structured error responses
-- Prometheus metrics
-- readiness checks
+- refine the mock-upstream proof story
+- add stronger documentation and example artifacts
+- validate forwarding against `llm-extraction-platform`
+- extend proof coverage for trace continuity through the real backend
+
+## Runtime Configuration
+
+- `GATEWAY_LISTEN_ADDR`
+- `GATEWAY_UPSTREAM_BASE_URL`
+- `GATEWAY_REQUEST_TIMEOUT`
+- `GATEWAY_LOG_LEVEL`
+- `GATEWAY_ENABLE_METRICS`
+- `GATEWAY_ALLOW_EXTRACT`
+- `GATEWAY_ALLOW_EXTRACT_JOBS`
+- `GATEWAY_ALLOW_JOB_STATUS`
+- `GATEWAY_MAX_BODY_BYTES`
+- `GATEWAY_CONCURRENCY_LIMIT`
+- `GATEWAY_RATE_LIMIT_PER_SECOND`
+- `GATEWAY_RATE_LIMIT_BURST`
+
+## Edge-Owned Error Classes
+
+- `invalid_request`
+- `unsupported_route`
+- `upstream_timeout`
+- `upstream_unavailable`
+- `request_too_large`
+- `route_not_allowed`
+- `concurrency_limited`
+- `rate_limited`

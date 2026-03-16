@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+Content-Type: application/json
+Date: Sun, 15 Mar 2026 16:58:34 GMT
+Server: InferenceGatewayMock/1.0 Python/3.13.5
+X-Request-Id: proof-request-1
+X-Trace-Id: proof-trace-1
+Content-Length: 190
+

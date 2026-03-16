@@ -1,0 +1,1 @@
+{"path": "/v1/extract", "method": "POST", "body": "{\"schema_id\":\"demo_schema_v1\",\"text\":\"Vendor: ACME\\nTotal: 10.00\"}", "request_id": "proof-request-1", "trace_id": "proof-trace-1"}
