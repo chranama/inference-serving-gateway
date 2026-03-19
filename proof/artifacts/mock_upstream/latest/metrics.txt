@@ -12,21 +12,21 @@ gateway_request_duration_seconds_bucket{method="GET",route="healthz",le="2.5"} 2
 gateway_request_duration_seconds_bucket{method="GET",route="healthz",le="5"} 2
 gateway_request_duration_seconds_bucket{method="GET",route="healthz",le="10"} 2
 gateway_request_duration_seconds_bucket{method="GET",route="healthz",le="+Inf"} 2
-gateway_request_duration_seconds_sum{method="GET",route="healthz"} 0.000176625
+gateway_request_duration_seconds_sum{method="GET",route="healthz"} 0.000174666
 gateway_request_duration_seconds_count{method="GET",route="healthz"} 2
-gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.005"} 1
-gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.01"} 1
-gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.025"} 1
-gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.05"} 1
-gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.1"} 1
-gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.25"} 1
-gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.5"} 1
-gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="1"} 1
+gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.005"} 2
+gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.01"} 2
+gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.025"} 2
+gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.05"} 2
+gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.1"} 2
+gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.25"} 2
+gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="0.5"} 2
+gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="1"} 2
 gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="2.5"} 2
 gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="5"} 2
 gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="10"} 2
 gateway_request_duration_seconds_bucket{method="GET",route="readyz",le="+Inf"} 2
-gateway_request_duration_seconds_sum{method="GET",route="readyz"} 2.0752571250000003
+gateway_request_duration_seconds_sum{method="GET",route="readyz"} 0.001747542
 gateway_request_duration_seconds_count{method="GET",route="readyz"} 2
 # HELP gateway_requests_total Total HTTP requests handled by the gateway.
 # TYPE gateway_requests_total counter
@@ -34,19 +34,19 @@ gateway_requests_total{method="GET",route="healthz",status="200"} 2
 gateway_requests_total{method="GET",route="readyz",status="200"} 2
 # HELP gateway_upstream_request_duration_seconds Latency for upstream requests made by the gateway.
 # TYPE gateway_upstream_request_duration_seconds histogram
-gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.005"} 1
-gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.01"} 1
-gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.025"} 1
-gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.05"} 1
-gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.1"} 1
-gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.25"} 1
-gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.5"} 1
-gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="1"} 1
+gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.005"} 2
+gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.01"} 2
+gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.025"} 2
+gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.05"} 2
+gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.1"} 2
+gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.25"} 2
+gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="0.5"} 2
+gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="1"} 2
 gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="2.5"} 2
 gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="5"} 2
 gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="10"} 2
 gateway_upstream_request_duration_seconds_bucket{method="GET",result="200",route="readyz",le="+Inf"} 2
-gateway_upstream_request_duration_seconds_sum{method="GET",result="200",route="readyz"} 2.075148042
+gateway_upstream_request_duration_seconds_sum{method="GET",result="200",route="readyz"} 0.0016267909999999998
 gateway_upstream_request_duration_seconds_count{method="GET",result="200",route="readyz"} 2
 # HELP gateway_upstream_requests_total Total upstream requests attempted by the gateway.
 # TYPE gateway_upstream_requests_total counter

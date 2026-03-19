@@ -9,9 +9,16 @@ if [[ -z "${LLM_EXTRACTION_PLATFORM_BASE_URL:-}" ]]; then
   exit 1
 fi
 
+if [[ -z "${LLM_EXTRACTION_PLATFORM_API_KEY:-}" ]]; then
+  echo "Set LLM_EXTRACTION_PLATFORM_API_KEY before running this script."
+  exit 1
+fi
+
 ARTIFACT_DIR="${1:-${SCRIPT_DIR}/artifacts/llm_extraction_platform/latest}"
 GATEWAY_PORT="${GATEWAY_PORT:-18082}"
 GATEWAY_URL="http://127.0.0.1:${GATEWAY_PORT}"
+POLL_ATTEMPTS="${POLL_ATTEMPTS:-80}"
+POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-0.25}"
 
 mkdir -p "${ARTIFACT_DIR}"
 
@@ -48,6 +55,7 @@ EXTRACT_PAYLOAD='{"schema_id":"sroie_receipt_v1","text":"Vendor: ACME\nTotal: 10
 curl -fsS \
   -D "${ARTIFACT_DIR}/extract.headers" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: ${LLM_EXTRACTION_PLATFORM_API_KEY}" \
   -H "X-Request-ID: integration-request-1" \
   -H "X-Trace-ID: integration-trace-1" \
   -d "${EXTRACT_PAYLOAD}" \
@@ -56,6 +64,7 @@ curl -fsS \
 curl -fsS \
   -D "${ARTIFACT_DIR}/extract_jobs.headers" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: ${LLM_EXTRACTION_PLATFORM_API_KEY}" \
   -H "X-Request-ID: integration-request-2" \
   -H "X-Trace-ID: integration-trace-2" \
   -d "${EXTRACT_PAYLOAD}" \
@@ -66,11 +75,41 @@ JOB_ID="$(
     "${ARTIFACT_DIR}/extract_jobs.body.json"
 )"
 
-curl -fsS \
-  -D "${ARTIFACT_DIR}/job_status.headers" \
-  -H "X-Request-ID: integration-request-3" \
-  -H "X-Trace-ID: integration-trace-2" \
-  "${GATEWAY_URL}/v1/extract/jobs/${JOB_ID}" >"${ARTIFACT_DIR}/job_status.body.json"
+FINAL_STATUS=""
+TMP_STATUS_HEADERS="${ARTIFACT_DIR}/job_status.tmp.headers"
+TMP_STATUS_BODY="${ARTIFACT_DIR}/job_status.tmp.body.json"
+
+for _ in $(seq 1 "${POLL_ATTEMPTS}"); do
+  curl -fsS \
+    -D "${TMP_STATUS_HEADERS}" \
+    -H "X-API-Key: ${LLM_EXTRACTION_PLATFORM_API_KEY}" \
+    -H "X-Request-ID: integration-request-3" \
+    -H "X-Trace-ID: integration-trace-2" \
+    "${GATEWAY_URL}/v1/extract/jobs/${JOB_ID}" >"${TMP_STATUS_BODY}"
+
+  mv "${TMP_STATUS_HEADERS}" "${ARTIFACT_DIR}/job_status.headers"
+  mv "${TMP_STATUS_BODY}" "${ARTIFACT_DIR}/job_status.body.json"
+
+  FINAL_STATUS="$(
+    python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status",""))' \
+      "${ARTIFACT_DIR}/job_status.body.json"
+  )"
+
+  if [[ "${FINAL_STATUS}" == "succeeded" || "${FINAL_STATUS}" == "failed" ]]; then
+    break
+  fi
+
+  sleep "${POLL_INTERVAL_SECONDS}"
+done
+
+if [[ "${FINAL_STATUS}" != "succeeded" && "${FINAL_STATUS}" != "failed" ]]; then
+  echo "Timed out waiting for terminal async job state for ${JOB_ID}." >&2
+  exit 1
+fi
+
+if [[ "${FINAL_STATUS}" != "succeeded" ]]; then
+  echo "Async job ${JOB_ID} finished with status ${FINAL_STATUS}." >&2
+  exit 1
+fi
 
 echo "Generated llm-extraction-platform integration artifacts in ${ARTIFACT_DIR}"
-

@@ -9,5 +9,13 @@
   - `extract.body.json`
   - `extract_jobs.body.json`
   - `job_status.body.json`
+  - `manifest.json`
 
-The extract and async job artifacts should show propagated `request_id` and `trace_id` values.
+Validated expectations:
+
+- sync extract preserves `proof-request-1` and `proof-trace-1`
+- async submit preserves `proof-request-2` and `proof-trace-2`
+- async status polling preserves `proof-trace-2` while reflecting the poll request as `proof-request-3`
+- metrics include both edge and upstream counters
+
+Use `manifest.json` as the machine-readable proof contract for the mock-upstream v1 demo path.

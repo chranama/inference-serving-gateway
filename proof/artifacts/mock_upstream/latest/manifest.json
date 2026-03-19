@@ -1,0 +1,50 @@
+{
+  "mode": "mock_upstream",
+  "gateway_url": "http://127.0.0.1:18080",
+  "upstream_url": "http://127.0.0.1:18081",
+  "checks": {
+    "healthz_ok": true,
+    "readyz_ready": true,
+    "metrics_include_gateway_requests_total": true,
+    "metrics_include_gateway_upstream_requests_total": true,
+    "extract_request_id_preserved": true,
+    "extract_trace_id_preserved": true,
+    "extract_header_request_id_preserved": true,
+    "extract_header_trace_id_preserved": true,
+    "async_submit_request_id_preserved": true,
+    "async_submit_trace_id_preserved": true,
+    "async_submit_header_request_id_preserved": true,
+    "async_submit_header_trace_id_preserved": true,
+    "async_status_request_id_reflects_poll_request": true,
+    "async_status_trace_id_preserved": true,
+    "async_status_header_request_id_reflects_poll_request": true,
+    "async_status_header_trace_id_preserved": true
+  },
+  "artifacts": {
+    "healthz_body": "healthz.body.json",
+    "readyz_body": "readyz.body.json",
+    "metrics": "metrics.txt",
+    "extract_headers": "extract.headers",
+    "extract_body": "extract.body.json",
+    "extract_jobs_headers": "extract_jobs.headers",
+    "extract_jobs_body": "extract_jobs.body.json",
+    "job_status_headers": "job_status.headers",
+    "job_status_body": "job_status.body.json",
+    "gateway_log": "gateway.log",
+    "mock_upstream_log": "mock-upstream.log"
+  },
+  "expected_identity": {
+    "extract": {
+      "request_id": "proof-request-1",
+      "trace_id": "proof-trace-1"
+    },
+    "extract_jobs": {
+      "request_id": "proof-request-2",
+      "trace_id": "proof-trace-2"
+    },
+    "job_status": {
+      "request_id": "proof-request-3",
+      "trace_id": "proof-trace-2"
+    }
+  }
+}

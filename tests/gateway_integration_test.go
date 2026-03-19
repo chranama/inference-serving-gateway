@@ -140,6 +140,45 @@ func TestExtractForwardingPreservesHeadersAndBody(t *testing.T) {
 	}
 }
 
+func TestExtractForwardingPreservesClientProvidedIdentity(t *testing.T) {
+	gateway, upstreamServer := newGateway(t, nil, newMockUpstream(nil, nil))
+	defer gateway.Close()
+	defer upstreamServer.Close()
+
+	requestBody := []byte(`{"schema_id":"demo","text":"hello"}`)
+	request, err := http.NewRequest(http.MethodPost, gateway.URL+"/v1/extract", bytes.NewReader(requestBody))
+	if err != nil {
+		t.Fatalf("NewRequest error = %v", err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("X-Request-ID", "client-request-1")
+	request.Header.Set("X-Trace-ID", "client-trace-1")
+
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatalf("POST /v1/extract error = %v", err)
+	}
+	defer resp.Body.Close()
+
+	var payload extractResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("Decode error = %v", err)
+	}
+
+	if payload.RequestID != "client-request-1" {
+		t.Fatalf("request id = %q, want client-request-1", payload.RequestID)
+	}
+	if payload.TraceID != "client-trace-1" {
+		t.Fatalf("trace id = %q, want client-trace-1", payload.TraceID)
+	}
+	if got := resp.Header.Get("X-Request-ID"); got != "client-request-1" {
+		t.Fatalf("response request id = %q, want client-request-1", got)
+	}
+	if got := resp.Header.Get("X-Trace-ID"); got != "client-trace-1" {
+		t.Fatalf("response trace id = %q, want client-trace-1", got)
+	}
+}
+
 func TestAsyncRoutesPreserveIdentity(t *testing.T) {
 	gateway, upstreamServer := newGateway(t, nil, newMockUpstream(nil, nil))
 	defer gateway.Close()
@@ -176,6 +215,98 @@ func TestAsyncRoutesPreserveIdentity(t *testing.T) {
 	}
 	if statusPayload.TraceID == "" {
 		t.Fatal("trace id should be preserved through async status polling")
+	}
+}
+
+func TestAsyncRoutesPreserveProvidedTraceAcrossPolling(t *testing.T) {
+	gateway, upstreamServer := newGateway(t, nil, newMockUpstream(nil, nil))
+	defer gateway.Close()
+	defer upstreamServer.Close()
+
+	submitReq, err := http.NewRequest(http.MethodPost, gateway.URL+"/v1/extract/jobs", strings.NewReader(`{"schema_id":"demo","text":"job"}`))
+	if err != nil {
+		t.Fatalf("NewRequest error = %v", err)
+	}
+	submitReq.Header.Set("Content-Type", "application/json")
+	submitReq.Header.Set("X-Request-ID", "submit-request-1")
+	submitReq.Header.Set("X-Trace-ID", "shared-trace-1")
+
+	submitResp, err := http.DefaultClient.Do(submitReq)
+	if err != nil {
+		t.Fatalf("POST /v1/extract/jobs error = %v", err)
+	}
+	defer submitResp.Body.Close()
+
+	var submitted jobSubmitResponse
+	if err := json.NewDecoder(submitResp.Body).Decode(&submitted); err != nil {
+		t.Fatalf("Decode submit response error = %v", err)
+	}
+
+	if submitted.RequestID != "submit-request-1" {
+		t.Fatalf("submit request id = %q, want submit-request-1", submitted.RequestID)
+	}
+	if submitted.TraceID != "shared-trace-1" {
+		t.Fatalf("submit trace id = %q, want shared-trace-1", submitted.TraceID)
+	}
+
+	statusReq, err := http.NewRequest(http.MethodGet, gateway.URL+"/v1/extract/jobs/"+submitted.JobID, nil)
+	if err != nil {
+		t.Fatalf("NewRequest error = %v", err)
+	}
+	statusReq.Header.Set("X-Request-ID", "poll-request-1")
+	statusReq.Header.Set("X-Trace-ID", "shared-trace-1")
+
+	statusResp, err := http.DefaultClient.Do(statusReq)
+	if err != nil {
+		t.Fatalf("GET /v1/extract/jobs/{job_id} error = %v", err)
+	}
+	defer statusResp.Body.Close()
+
+	var statusPayload jobStatusResponse
+	if err := json.NewDecoder(statusResp.Body).Decode(&statusPayload); err != nil {
+		t.Fatalf("Decode status response error = %v", err)
+	}
+
+	if statusPayload.RequestID != "poll-request-1" {
+		t.Fatalf("status request id = %q, want poll-request-1", statusPayload.RequestID)
+	}
+	if statusPayload.TraceID != "shared-trace-1" {
+		t.Fatalf("status trace id = %q, want shared-trace-1", statusPayload.TraceID)
+	}
+	if got := statusResp.Header.Get("X-Request-ID"); got != "poll-request-1" {
+		t.Fatalf("status response request id = %q, want poll-request-1", got)
+	}
+	if got := statusResp.Header.Get("X-Trace-ID"); got != "shared-trace-1" {
+		t.Fatalf("status response trace id = %q, want shared-trace-1", got)
+	}
+}
+
+func TestGatewayAddsProxyMarkerHeader(t *testing.T) {
+	var gotProxy string
+	upstreamHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotProxy = r.Header.Get("X-Gateway-Proxy")
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Trace-ID", r.Header.Get("X-Trace-ID"))
+		writeJSON(w, http.StatusOK, extractResponse{
+			Method:    r.Method,
+			Path:      r.URL.Path,
+			RequestID: r.Header.Get("X-Request-ID"),
+			TraceID:   r.Header.Get("X-Trace-ID"),
+		})
+	})
+
+	gateway, upstreamServer := newGateway(t, nil, upstreamHandler)
+	defer gateway.Close()
+	defer upstreamServer.Close()
+
+	resp, err := http.Post(gateway.URL+"/v1/extract", "application/json", strings.NewReader(`{"schema_id":"demo","text":"hello"}`))
+	if err != nil {
+		t.Fatalf("POST /v1/extract error = %v", err)
+	}
+	defer resp.Body.Close()
+
+	if gotProxy != "inference-serving-gateway" {
+		t.Fatalf("X-Gateway-Proxy = %q, want inference-serving-gateway", gotProxy)
 	}
 }
 

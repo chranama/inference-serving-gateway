@@ -7,7 +7,7 @@ This directory contains proof helpers for the gateway in two modes:
 
 ## Mock Upstream Proof
 
-This is the primary proof path for the repository MVP.
+This is the canonical proof path for `inference-serving-gateway v1`.
 
 Command:
 
@@ -31,6 +31,24 @@ Artifacts are written under:
 
 - `proof/artifacts/mock_upstream/latest/`
 
+Key proof files:
+
+- `manifest.json`
+- `summary.md`
+- `extract.headers`
+- `extract.body.json`
+- `extract_jobs.headers`
+- `extract_jobs.body.json`
+- `job_status.headers`
+- `job_status.body.json`
+
+What this path proves:
+
+- stable route surface for sync and async extract
+- gateway-owned request and trace identity behavior
+- readiness and metrics surfaces
+- a reproducible local demo path independent of the real backend
+
 ## `llm-extraction-platform` Integration Probe
 
 Command:
@@ -41,3 +59,10 @@ LLM_EXTRACTION_PLATFORM_BASE_URL=http://127.0.0.1:8000 proof/run_llm_extraction_
 
 Use this only when the real backend is already running and configured.
 
+This path is intentionally treated as:
+
+- backend `v3` integration proof
+
+not:
+
+- the release gate for gateway `v1`

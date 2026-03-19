@@ -1,0 +1,8 @@
+HTTP/1.1 202 Accepted
+Content-Type: application/json
+Date: Thu, 19 Mar 2026 23:03:55 GMT
+Server: uvicorn
+X-Request-Id: integration-request-2
+X-Trace-Id: integration-trace-2
+Content-Length: 260
+

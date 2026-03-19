@@ -11,7 +11,7 @@ Go service intended to front inference backends with production-style serving/ru
 
 ## Status
 
-Early MVP implemented. This repository now includes:
+Gateway `v1` is now functionally complete as an isolated edge/runtime service. This repository includes:
 
 - a runnable Go HTTP service
 - health, readiness, and metrics endpoints
@@ -24,11 +24,12 @@ Early MVP implemented. This repository now includes:
 - mock-upstream proof scripts
 - Go unit and integration tests
 
-Current plan:
-1. continue iterating against the mock upstream
-2. harden proof artifacts and local deployment story
-3. integrate with `llm-extraction-platform`
-4. add a canonical proof stack showing end-to-end trace continuity
+Release position:
+
+- mock-upstream proof remains the canonical `v1` release gate
+- `llm-extraction-platform v3` compatibility is now implemented
+- a repeatable live backend proof exists in:
+  - [`proof/run_llm_extraction_platform_integration.sh`](proof/run_llm_extraction_platform_integration.sh)
 
 ## Intended Upstream
 
@@ -37,6 +38,9 @@ Initial target upstream:
 
 Canonical boundary spec:
 - [`../llm-extraction-platform/docs/service-boundary.inference-serving-gateway.md`](../llm-extraction-platform/docs/service-boundary.inference-serving-gateway.md)
+
+Rollout plan:
+- [`docs/v1-rollout-plan.md`](docs/v1-rollout-plan.md)
 
 ## Planned Scope
 
@@ -55,6 +59,12 @@ Install Go dependencies and run the test suite:
 ```bash
 go mod tidy
 go test ./...
+```
+
+Canonical v1 proof path:
+
+```bash
+proof/generate_mock_proof.sh
 ```
 
 Run the gateway against the bundled mock upstream:
@@ -79,6 +89,14 @@ Generate local proof artifacts:
 proof/generate_mock_proof.sh
 ```
 
+Run the live gateway proof against a compatible backend:
+
+```bash
+LLM_EXTRACTION_PLATFORM_BASE_URL=http://127.0.0.1:18081 \
+LLM_EXTRACTION_PLATFORM_API_KEY=... \
+proof/run_llm_extraction_platform_integration.sh
+```
+
 Docker Compose local stack:
 
 ```bash
@@ -100,16 +118,15 @@ internal/limiter/         concurrency and rate limiting
 internal/errors/          structured edge error contracts
 docs/                     architecture and design notes
 deployments/              compose/k8s manifests later
-proof/                    proof artifacts and scripts later
+proof/                    proof artifacts and scripts
 tests/                    integration and end-to-end tests
 ```
 
-## Near-Term Deliverables
+## Deferred Beyond v1
 
-- refine the mock-upstream proof story
-- add stronger documentation and example artifacts
-- validate forwarding against `llm-extraction-platform`
-- extend proof coverage for trace continuity through the real backend
+- edge authentication / API-key validation
+- broader route surface such as `POST /v1/generate`
+- fully automated cross-repo CI for the live backend proof
 
 ## Runtime Configuration
 
