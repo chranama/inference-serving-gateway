@@ -5,3 +5,5 @@ dist/
 tmp/
 *.test
 *.out
+proof/runtime/local_stack/
+proof/artifacts/kind_stack/port-forward-*.log

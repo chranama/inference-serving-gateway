@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extract-worker
+  namespace: llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: extract-worker
+  template:
+    metadata:
+      labels:
+        app: extract-worker
+    spec:
+      containers:
+        - name: worker
+          image: llm-server:dev
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ENV
+              value: "dev"
+            - name: APP_PROFILE
+              value: "test"
+            - name: APP_ROOT
+              value: "/app"
+            - name: APP_CONFIG_PATH
+              value: "/app/config/server.yaml"
+            - name: MODELS_PROFILE
+              value: "observability-proof"
+            - name: MODELS_YAML
+              value: "/app/models/models.yaml"
+            - name: SCHEMAS_DIR
+              value: "/app/schemas/model_output"
+            - name: EDGE_MODE
+              value: "behind_gateway"
+            - name: MODEL_LOAD_MODE
+              value: "lazy"
+            - name: REQUIRE_MODEL_READY
+              value: "0"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: llm-secrets
+                  key: DATABASE_URL
+            - name: REDIS_ENABLED
+              value: "true"
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: llm-secrets
+                  key: REDIS_URL
+          command:
+            - python
+            - -m
+            - llm_server.worker.extract_jobs
+            - --poll-timeout-seconds
+            - "1"
+          volumeMounts:
+            - name: llm-config
+              mountPath: /app/config
+              readOnly: true
+            - name: llm-models
+              mountPath: /app/models
+              readOnly: true
+      volumes:
+        - name: llm-config
+          configMap:
+            name: llm-config
+            items:
+              - key: server.yaml
+                path: server.yaml
+        - name: llm-models
+          configMap:
+            name: llm-models
+            items:
+              - key: models.yaml
+                path: models.yaml

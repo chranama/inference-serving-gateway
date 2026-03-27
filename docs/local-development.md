@@ -36,6 +36,64 @@ Use this path when validating:
 - readiness
 - metrics
 
+## Canonical Phase 2 Workflow
+
+For the integrated local stack, the canonical entrypoint is:
+
+```bash
+proof/run_local_stack.sh up
+```
+
+This harness:
+
+- starts host-published Postgres and Redis via the backend repo compose file
+- starts host-published Prometheus and Grafana via the backend repo host-observability profile
+- applies backend migrations
+- seeds canonical proof API keys
+- starts the host-run backend, async worker, and gateway
+
+Companion commands:
+
+```bash
+proof/run_local_stack.sh status
+proof/run_local_stack.sh proof
+proof/run_local_stack.sh down
+```
+
+The environment contract behind this workflow is documented in:
+
+- `/Users/chranama/career/inference-serving-gateway/docs/local-environment-contract.md`
+- `/Users/chranama/career/llm-extraction-platform/docs/local-environment-contract.md`
+
+## Canonical Phase 2 Kind Workflow
+
+For the Kubernetes-shaped local stack, the canonical entrypoint is:
+
+```bash
+proof/run_kind_stack.sh up
+```
+
+This harness:
+
+- creates or reuses the local `kind` cluster
+- builds and loads the backend and gateway images
+- applies the backend observability overlay
+- deploys the async worker and gateway in-cluster
+- seeds canonical proof API keys with a Kubernetes job
+
+Companion commands:
+
+```bash
+proof/run_kind_stack.sh status
+proof/run_kind_stack.sh proof
+proof/run_kind_stack.sh down
+```
+
+The kind contract behind this workflow is documented in:
+
+- `/Users/chranama/career/inference-serving-gateway/docs/kind-deployment-contract.md`
+- `/Users/chranama/career/llm-extraction-platform/docs/kind-deployment-contract.md`
+
 ## Manual Mock-Upstream Workflow
 
 Run the gateway against the local mock upstream manually:

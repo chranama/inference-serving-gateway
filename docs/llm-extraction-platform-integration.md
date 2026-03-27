@@ -28,6 +28,10 @@ The gateway only adds:
 - edge logs and metrics
 - readiness aggregation
 
+Identity semantics reference:
+
+- `/Users/chranama/career/inference-serving-gateway/docs/trace-identity-contract.md`
+
 ## Live Integration Proof
 
 Use:
@@ -69,5 +73,46 @@ Primary generated artifacts:
 - `job_status.body.json`
 - `job_status.headers`
 - `gateway.log`
+
+## Phase 1 Observability Pack
+
+For the richer end-to-end observability artifact bundle, use:
+
+```bash
+LLM_EXTRACTION_PLATFORM_BASE_URL=http://127.0.0.1:8000 \
+LLM_EXTRACTION_PLATFORM_API_KEY=... \
+LLM_EXTRACTION_PLATFORM_ADMIN_API_KEY=... \
+proof/generate_llm_extraction_platform_observability_pack.sh
+```
+
+Backend prerequisite:
+
+- run the backend with `EDGE_MODE=behind_gateway`
+- the gateway already sends `X-Gateway-Proxy`, and the backend must be in trusted gateway mode for shared trace IDs to survive into response headers and admin trace inspection
+- for the canonical local proof path, run it with:
+  - `MODELS_PROFILE=observability-proof`
+  - `MODELS_YAML=/Users/chranama/career/llm-extraction-platform/proof/fixtures/models.observability-proof.yaml`
+  - `SCHEMAS_DIR=/Users/chranama/career/llm-extraction-platform/schemas/model_output`
+
+That path captures:
+
+- gateway log and metrics
+- backend metrics
+- backend trace detail for sync and async flows
+- backend execution-log slices from `/v1/admin/logs`, keyed by request/trace/job identity
+- a machine-readable `manifest.json`
+- a reviewer-fast `summary.md`
+
+Supporting docs:
+
+- `/Users/chranama/career/inference-serving-gateway/docs/observability-walkthrough.md`
+- `/Users/chranama/career/inference-serving-gateway/docs/integrated-metrics-map.md`
+- `/Users/chranama/career/inference-serving-gateway/docs/trace-identity-contract.md`
+- `/Users/chranama/career/inference-serving-gateway/docs/local-environment-contract.md`
+
+Interpretation note:
+
+- `/v1/admin/logs` is inference-execution-focused
+- async poll visibility is expected to be strongest in access logs and trace events rather than in execution-log rows
 
 This script is intentionally not part of the default `go test` flow because it depends on a running backend environment outside this repository.

@@ -1,0 +1,104 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-proof-keys
+  namespace: llm
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: seed-proof-keys
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: seed
+          image: llm-server:dev
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: APP_ROOT
+              value: "/app"
+            - name: APP_PROFILE
+              value: "test"
+            - name: APP_CONFIG_PATH
+              value: "/app/config/server.yaml"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: llm-secrets
+                  key: DATABASE_URL
+            - name: PROOF_USER_KEY
+              value: "proof-user-key"
+            - name: PROOF_ADMIN_KEY
+              value: "proof-admin-key"
+          command:
+            - /bin/sh
+            - -lc
+            - |
+              set -euo pipefail
+
+              for i in $(seq 1 60); do
+                if python -c "import socket; s = socket.create_connection(('postgres', 5432), 5); s.close()"; then
+                  break
+                fi
+                sleep 2
+              done
+
+              python - <<'PY'
+              import asyncio
+              import os
+              from sqlalchemy import select
+
+              from llm_server.db.models import ApiKey, RoleTable
+              from llm_server.db.session import get_sessionmaker
+
+              PROOF_USER_KEY = os.environ["PROOF_USER_KEY"]
+              PROOF_ADMIN_KEY = os.environ["PROOF_ADMIN_KEY"]
+
+              async def ensure_role(session, name: str) -> RoleTable:
+                  role = (
+                      await session.execute(select(RoleTable).where(RoleTable.name == name))
+                  ).scalar_one_or_none()
+                  if role is None:
+                      role = RoleTable(name=name)
+                      session.add(role)
+                      await session.flush()
+                  return role
+
+              async def ensure_key(session, *, key: str, role_id: int | None) -> None:
+                  row = (
+                      await session.execute(select(ApiKey).where(ApiKey.key == key))
+                  ).scalar_one_or_none()
+                  if row is None:
+                      session.add(
+                          ApiKey(
+                              key=key,
+                              active=True,
+                              role_id=role_id,
+                              quota_monthly=None,
+                              quota_used=0,
+                          )
+                      )
+                      return
+                  changed = False
+                  if not row.active:
+                      row.active = True
+                      changed = True
+                  if row.role_id != role_id:
+                      row.role_id = role_id
+                      changed = True
+                  if changed:
+                      session.add(row)
+
+              async def main() -> None:
+                  sessionmaker = get_sessionmaker()
+                  async with sessionmaker() as session:
+                      admin = await ensure_role(session, "admin")
+                      standard = await ensure_role(session, "standard")
+                      await ensure_key(session, key=PROOF_USER_KEY, role_id=standard.id)
+                      await ensure_key(session, key=PROOF_ADMIN_KEY, role_id=admin.id)
+                      await session.commit()
+
+              asyncio.run(main())
+              PY
