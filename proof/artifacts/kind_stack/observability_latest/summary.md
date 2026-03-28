@@ -5,15 +5,16 @@
 - Async submit request ID: `integration-obs-request-2`
 - Shared async trace ID: `integration-obs-trace-2`
 - Async poll request ID: `integration-obs-request-3`
-- Async job ID: `890d8f2a1cd247a697c1ca0dedb582b7`
+- Async job ID: `e88f8071af80403ea58a956d01f18c61`
 
 Captured surfaces:
 
-- `gateway.log`
 - `gateway.metrics.txt`
 - `backend.metrics.txt`
 - `sync_trace_detail.json`
 - `async_trace_detail.json`
+- `sync_otel_trace.json`
+- `async_otel_trace.json`
 - `sync_logs.json`
 - `async_logs.json`
 - `async_poll_logs.json`
@@ -33,3 +34,10 @@ What this pack proves:
 - async worker execution rows are directly joinable by shared `trace_id` and `job_id`
 - async extract is inspectable through submit, worker, and poll trace events
 - both gateway and backend metrics can be checked from one run
+
+OpenTelemetry note:
+
+- `sync_otel_trace.json` is a Jaeger export for the sync distributed trace
+- `async_otel_trace.json` is a Jaeger export for the async submit plus worker continuation trace
+- poll requests remain separate HTTP request traces and are not folded into `async_otel_trace.json`
+- application `trace_id` remains the logical-operation ID; OTel `TraceId` is a separate transport-level trace identifier

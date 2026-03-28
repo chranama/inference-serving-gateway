@@ -1,1 +1,1 @@
-{"job_id":"890d8f2a1cd247a697c1ca0dedb582b7","trace_id":"integration-obs-trace-2","status":"queued","schema_id":"sroie_receipt_v1","model":"fake-extract","created_at":"2026-03-28T18:21:22.565118+00:00","poll_path":"/v1/extract/jobs/890d8f2a1cd247a697c1ca0dedb582b7"}
+{"job_id":"e88f8071af80403ea58a956d01f18c61","trace_id":"integration-obs-trace-2","status":"queued","schema_id":"sroie_receipt_v1","model":"fake-extract","created_at":"2026-03-28T18:30:06.476518+00:00","poll_path":"/v1/extract/jobs/e88f8071af80403ea58a956d01f18c61"}

@@ -230,6 +230,10 @@ cmd_proof() {
     LLM_EXTRACTION_PLATFORM_API_KEY="${PHASE2_PROOF_USER_KEY}" \
     LLM_EXTRACTION_PLATFORM_ADMIN_API_KEY="${PHASE2_PROOF_ADMIN_KEY}" \
     GATEWAY_BASE_URL="http://127.0.0.1:${PHASE2_KIND_GATEWAY_LOCAL_PORT}" \
+    JAEGER_BASE_URL="http://127.0.0.1:${PHASE2_KIND_JAEGER_LOCAL_PORT}" \
+    OTEL_GATEWAY_SERVICE_NAME="inference-serving-gateway" \
+    OTEL_BACKEND_SERVICE_NAME="llm-extraction-platform" \
+    OTEL_WORKER_SERVICE_NAME="llm-extraction-platform-worker" \
     "${SCRIPT_DIR}/generate_llm_extraction_platform_observability_pack.sh" \
     "${ARTIFACT_DIR}/observability_latest"
 

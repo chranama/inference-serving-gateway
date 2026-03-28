@@ -111,6 +111,7 @@ This path captures:
 - backend metrics
 - backend admin trace detail for sync and async flows
 - backend admin execution-log slices for sync and async execution IDs
+- Jaeger trace exports for sync and async flows when `JAEGER_BASE_URL` is provided
 - a generated manifest and summary
 
 Artifacts are written under:
@@ -122,6 +123,18 @@ This path is the canonical Phase 1 proof for:
 - shared request and trace identity
 - gateway/backend correlation
 - sync plus async observability
+
+When the pack is generated through:
+
+- `proof/run_local_stack.sh proof`
+- `proof/run_kind_stack.sh proof`
+
+it also captures:
+
+- `sync_otel_trace.json`
+- `async_otel_trace.json`
+
+Those files are Jaeger exports for the bounded distributed-tracing story.
 
 Semantics note:
 
@@ -158,6 +171,8 @@ When `PHASE2_WITH_OTEL=1` (the default), the local stack also brings up:
 
 The host-run gateway, backend, and worker export OTLP/HTTP traces into that collector by default.
 
+`proof/run_local_stack.sh proof` now reuses the already-running gateway and Jaeger instance so the generated observability pack includes OTel trace exports as well as the existing application trace/event artifacts.
+
 ## Phase 2 Kind Stack Harness
 
 Canonical entrypoint:
@@ -178,6 +193,12 @@ This harness is the Kubernetes-shaped companion to the Compose-backed local stac
 
 - the local stack harness uses Docker Compose for infra and host-run app processes
 - the kind harness builds local images, loads them into `kind`, applies the backend observability overlay, and deploys gateway + worker add-ons in-cluster
+
+`proof/run_kind_stack.sh proof` now:
+
+- generates the integrated observability pack
+- exports Jaeger-backed sync and async trace artifacts into the same pack
+- captures `jaeger-services.json` as a proof artifact
 
 Kind contract docs:
 

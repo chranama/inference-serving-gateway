@@ -1,4 +1,4 @@
-# Phase 1 Observability Walkthrough
+# Integrated Observability Walkthrough
 
 This walkthrough explains how to inspect the Phase 1 integrated observability proof for:
 
@@ -18,7 +18,7 @@ The point of the proof is to show that one request can be followed across:
 - async worker execution
 - async polling
 
-without pretending the system already has full distributed tracing infrastructure.
+without losing the application identity semantics that already existed before OpenTelemetry.
 
 ## Generate The Artifact Pack
 
@@ -74,11 +74,18 @@ Open these in order:
 
 1. `summary.md`
 2. `manifest.json`
-3. `gateway.log`
-4. `sync_trace_detail.json`
-5. `async_trace_detail.json`
-6. `gateway.metrics.txt`
-7. `backend.metrics.txt`
+3. `sync_trace_detail.json`
+4. `async_trace_detail.json`
+5. `sync_otel_trace.json` when present
+6. `async_otel_trace.json` when present
+7. `gateway.metrics.txt`
+8. `backend.metrics.txt`
+
+If the pack was generated through the Phase 2 local or kind harnesses, the OTel exports should be present.
+
+OTel-specific walkthrough:
+
+- `/Users/chranama/career/inference-serving-gateway/docs/opentelemetry-walkthrough.md`
 
 ## Sync Request Inspection
 
@@ -87,18 +94,21 @@ Use the sync identifiers from `summary.md` and `manifest.json`.
 What to verify:
 
 - the gateway response headers preserve the sync `request_id` and `trace_id`
-- `gateway.log` shows the sync request at the edge
 - `sync_trace_detail.json` shows backend events like:
   - `extract.accepted`
   - `extract.model_resolved`
   - `extract.validation_completed`
   - `extract.completed`
 - `sync_logs.json` shows backend inference-execution evidence joined by the shared sync `trace_id`
+- `sync_otel_trace.json` shows the transport-level distributed trace with:
+  - gateway span(s)
+  - backend span(s)
 
 Interpretation:
 
 - the gateway owns the edge request surface
 - the backend owns the application trace detail
+- OTel adds the cross-service execution path; it does not replace the application `trace_id`
 - `/v1/admin/logs` is being used here as an execution-log surface, not as raw request logging
 - the exact meaning of `request_id`, `trace_id`, and `job_id` is defined in the trace identity contract
 
@@ -118,12 +128,17 @@ What to verify:
   - `extract_job.completed`
   - `extract_job.status_polled`
 - `async_logs.json` shows backend inference-execution evidence for the async worker path, joined by shared async `trace_id` plus `job_id`
+- `async_otel_trace.json` shows the distributed trace for:
+  - submit request
+  - worker continuation
+  not poll requests
 
 Interpretation:
 
 - trace identity follows the async job across submit, worker execution, and polling
 - request identity changes where it should, while trace identity remains stable
 - poll visibility is richer in access logs and trace events than in execution logs
+- poll requests are separate HTTP traces in OTel; they are not forced into the worker continuation trace
 
 Surface note:
 
@@ -164,5 +179,6 @@ This proof is successful if a reviewer can see that:
 - the backend still owns application semantics
 - the two systems share correlation identity cleanly
 - sync and async flows are both inspectable
+- the OTel transport trace path complements, rather than replaces, the application trace/event model
 
 That is the core Phase 1 outcome.
