@@ -1,8 +1,8 @@
 # HELP python_gc_objects_collected_total Objects collected during gc
 # TYPE python_gc_objects_collected_total counter
-python_gc_objects_collected_total{generation="0"} 4615.0
-python_gc_objects_collected_total{generation="1"} 974.0
-python_gc_objects_collected_total{generation="2"} 92.0
+python_gc_objects_collected_total{generation="0"} 6464.0
+python_gc_objects_collected_total{generation="1"} 2393.0
+python_gc_objects_collected_total{generation="2"} 1030.0
 # HELP python_gc_objects_uncollectable_total Uncollectable objects found during GC
 # TYPE python_gc_objects_uncollectable_total counter
 python_gc_objects_uncollectable_total{generation="0"} 0.0
@@ -10,27 +10,27 @@ python_gc_objects_uncollectable_total{generation="1"} 0.0
 python_gc_objects_uncollectable_total{generation="2"} 0.0
 # HELP python_gc_collections_total Number of times this generation was collected
 # TYPE python_gc_collections_total counter
-python_gc_collections_total{generation="0"} 572.0
-python_gc_collections_total{generation="1"} 51.0
-python_gc_collections_total{generation="2"} 4.0
+python_gc_collections_total{generation="0"} 626.0
+python_gc_collections_total{generation="1"} 56.0
+python_gc_collections_total{generation="2"} 5.0
 # HELP python_info Python platform information
 # TYPE python_info gauge
 python_info{implementation="CPython",major="3",minor="12",patchlevel="13",version="3.12.13"} 1.0
 # HELP process_virtual_memory_bytes Virtual memory size in bytes.
 # TYPE process_virtual_memory_bytes gauge
-process_virtual_memory_bytes 2.111737856e+09
+process_virtual_memory_bytes 2.20045312e+09
 # HELP process_resident_memory_bytes Resident memory size in bytes.
 # TYPE process_resident_memory_bytes gauge
-process_resident_memory_bytes 3.09051392e+08
+process_resident_memory_bytes 3.20761856e+08
 # HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
 # TYPE process_start_time_seconds gauge
-process_start_time_seconds 1.77462850844e+09
+process_start_time_seconds 1.77472191591e+09
 # HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
 # TYPE process_cpu_seconds_total counter
-process_cpu_seconds_total 3.58
+process_cpu_seconds_total 4.329999999999999
 # HELP process_open_fds Number of open file descriptors.
 # TYPE process_open_fds gauge
-process_open_fds 24.0
+process_open_fds 25.0
 # HELP process_max_fds Maximum number of open file descriptors.
 # TYPE process_max_fds gauge
 process_max_fds 1.048576e+06
@@ -38,40 +38,40 @@ process_max_fds 1.048576e+06
 # TYPE llm_tokens_total counter
 # HELP llm_api_request_latency_seconds Request latency in seconds
 # TYPE llm_api_request_latency_seconds histogram
-llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.05",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.075",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.1",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.25",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.5",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.75",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="1.0",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="2.5",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="5.0",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_count{cached="false",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/healthz",status_code="200"} 0.013475418090820312
-llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="unknown",route="/readyz",status_code="200"} 3.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="unknown",route="/readyz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="unknown",route="/readyz",status_code="200"} 11.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.05",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.075",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.1",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.25",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.5",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.75",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="1.0",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="2.5",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="5.0",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_count{cached="false",model_id="unknown",route="/readyz",status_code="200"} 12.0
-llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/readyz",status_code="200"} 0.11270499229431152
+llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.05",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.075",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.1",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.25",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.5",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.75",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="1.0",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="2.5",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="5.0",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_count{cached="false",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/healthz",status_code="200"} 0.0387272834777832
+llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="unknown",route="/readyz",status_code="200"} 5.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="unknown",route="/readyz",status_code="200"} 29.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="unknown",route="/readyz",status_code="200"} 30.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.05",model_id="unknown",route="/readyz",status_code="200"} 31.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.075",model_id="unknown",route="/readyz",status_code="200"} 31.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.1",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.25",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.5",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.75",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_bucket{cached="false",le="1.0",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_bucket{cached="false",le="2.5",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_bucket{cached="false",le="5.0",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_count{cached="false",model_id="unknown",route="/readyz",status_code="200"} 32.0
+llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/readyz",status_code="200"} 0.3330090045928955
 llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="fake-extract",route="/v1/extract",status_code="200"} 0.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="fake-extract",route="/v1/extract",status_code="200"} 0.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="fake-extract",route="/v1/extract",status_code="200"} 0.0
@@ -88,7 +88,7 @@ llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="fake-ex
 llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="fake-extract",route="/v1/extract",status_code="200"} 2.0
 llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="fake-extract",route="/v1/extract",status_code="200"} 2.0
 llm_api_request_latency_seconds_count{cached="false",model_id="fake-extract",route="/v1/extract",status_code="200"} 2.0
-llm_api_request_latency_seconds_sum{cached="false",model_id="fake-extract",route="/v1/extract",status_code="200"} 0.3221311569213867
+llm_api_request_latency_seconds_sum{cached="false",model_id="fake-extract",route="/v1/extract",status_code="200"} 0.25218892097473145
 llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 0.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 0.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 2.0
@@ -105,24 +105,24 @@ llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="unknown
 llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 2.0
 llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 2.0
 llm_api_request_latency_seconds_count{cached="false",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 2.0
-llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 0.02518463134765625
-llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 0.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 0.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.05",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.075",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.1",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.25",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.5",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.75",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="1.0",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="2.5",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="5.0",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_count{cached="false",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
-llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 0.03191685676574707
+llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 0.029932498931884766
+llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 0.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 1.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.05",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.075",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.1",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.25",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.5",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="0.75",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="1.0",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="2.5",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="5.0",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_count{cached="false",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
+llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 0.05356764793395996
 llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="unknown",route="/metrics",status_code="200"} 1.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="unknown",route="/metrics",status_code="200"} 1.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="unknown",route="/metrics",status_code="200"} 1.0
@@ -139,7 +139,7 @@ llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="unknown
 llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="unknown",route="/metrics",status_code="200"} 1.0
 llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="unknown",route="/metrics",status_code="200"} 1.0
 llm_api_request_latency_seconds_count{cached="false",model_id="unknown",route="/metrics",status_code="200"} 1.0
-llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/metrics",status_code="200"} 0.0017895698547363281
+llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/metrics",status_code="200"} 0.0030791759490966797
 llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="admin",route="/v1/admin/traces",status_code="200"} 0.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="admin",route="/v1/admin/traces",status_code="200"} 2.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="admin",route="/v1/admin/traces",status_code="200"} 2.0
@@ -156,8 +156,8 @@ llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="admin",
 llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="admin",route="/v1/admin/traces",status_code="200"} 2.0
 llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="admin",route="/v1/admin/traces",status_code="200"} 2.0
 llm_api_request_latency_seconds_count{cached="false",model_id="admin",route="/v1/admin/traces",status_code="200"} 2.0
-llm_api_request_latency_seconds_sum{cached="false",model_id="admin",route="/v1/admin/traces",status_code="200"} 0.012872695922851562
-llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="admin",route="/v1/admin/logs",status_code="200"} 0.0
+llm_api_request_latency_seconds_sum{cached="false",model_id="admin",route="/v1/admin/traces",status_code="200"} 0.01355600357055664
+llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="admin",route="/v1/admin/logs",status_code="200"} 1.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="admin",route="/v1/admin/logs",status_code="200"} 3.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="admin",route="/v1/admin/logs",status_code="200"} 3.0
 llm_api_request_latency_seconds_bucket{cached="false",le="0.05",model_id="admin",route="/v1/admin/logs",status_code="200"} 3.0
@@ -173,57 +173,37 @@ llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="admin",
 llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="admin",route="/v1/admin/logs",status_code="200"} 3.0
 llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="admin",route="/v1/admin/logs",status_code="200"} 3.0
 llm_api_request_latency_seconds_count{cached="false",model_id="admin",route="/v1/admin/logs",status_code="200"} 3.0
-llm_api_request_latency_seconds_sum{cached="false",model_id="admin",route="/v1/admin/logs",status_code="200"} 0.02155756950378418
-llm_api_request_latency_seconds_bucket{cached="false",le="0.005",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 0.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.01",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 1.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.025",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.05",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.075",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.1",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.25",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.5",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="0.75",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="1.0",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="2.5",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="5.0",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="7.5",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="10.0",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_bucket{cached="false",le="+Inf",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_count{cached="false",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
-llm_api_request_latency_seconds_sum{cached="false",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 0.018021106719970703
+llm_api_request_latency_seconds_sum{cached="false",model_id="admin",route="/v1/admin/logs",status_code="200"} 0.017943859100341797
 # HELP llm_api_request_latency_seconds_created Request latency in seconds
 # TYPE llm_api_request_latency_seconds_created gauge
-llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/healthz",status_code="200"} 1.7746285105597167e+09
-llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/readyz",status_code="200"} 1.7746285172316375e+09
-llm_api_request_latency_seconds_created{cached="false",model_id="fake-extract",route="/v1/extract",status_code="200"} 1.7746285396249962e+09
-llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 1.774628539684866e+09
-llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 1.774628539766671e+09
-llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/metrics",status_code="200"} 1.7746285401509373e+09
-llm_api_request_latency_seconds_created{cached="false",model_id="admin",route="/v1/admin/traces",status_code="200"} 1.7746285401690474e+09
-llm_api_request_latency_seconds_created{cached="false",model_id="admin",route="/v1/admin/logs",status_code="200"} 1.774628540205172e+09
-llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 1.7746285758576376e+09
+llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/healthz",status_code="200"} 1.7747219200276477e+09
+llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/readyz",status_code="200"} 1.7747219252153718e+09
+llm_api_request_latency_seconds_created{cached="false",model_id="fake-extract",route="/v1/extract",status_code="200"} 1.7747219532450745e+09
+llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 1.774721953317132e+09
+llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 1.7747219533979504e+09
+llm_api_request_latency_seconds_created{cached="false",model_id="unknown",route="/metrics",status_code="200"} 1.774721953812153e+09
+llm_api_request_latency_seconds_created{cached="false",model_id="admin",route="/v1/admin/traces",status_code="200"} 1.7747219538308387e+09
+llm_api_request_latency_seconds_created{cached="false",model_id="admin",route="/v1/admin/logs",status_code="200"} 1.7747219538646028e+09
 # HELP llm_api_request_total Total requests
 # TYPE llm_api_request_total counter
-llm_api_request_total{cached="false",model_id="unknown",route="/healthz",status_code="200"} 11.0
-llm_api_request_total{cached="false",model_id="unknown",route="/readyz",status_code="200"} 12.0
+llm_api_request_total{cached="false",model_id="unknown",route="/healthz",status_code="200"} 21.0
+llm_api_request_total{cached="false",model_id="unknown",route="/readyz",status_code="200"} 32.0
 llm_api_request_total{cached="false",model_id="fake-extract",route="/v1/extract",status_code="200"} 2.0
 llm_api_request_total{cached="false",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 2.0
-llm_api_request_total{cached="false",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 2.0
+llm_api_request_total{cached="false",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 4.0
 llm_api_request_total{cached="false",model_id="unknown",route="/metrics",status_code="200"} 1.0
 llm_api_request_total{cached="false",model_id="admin",route="/v1/admin/traces",status_code="200"} 2.0
 llm_api_request_total{cached="false",model_id="admin",route="/v1/admin/logs",status_code="200"} 3.0
-llm_api_request_total{cached="false",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 2.0
 # HELP llm_api_request_created Total requests
 # TYPE llm_api_request_created gauge
-llm_api_request_created{cached="false",model_id="unknown",route="/healthz",status_code="200"} 1.7746285105597463e+09
-llm_api_request_created{cached="false",model_id="unknown",route="/readyz",status_code="200"} 1.77462851723167e+09
-llm_api_request_created{cached="false",model_id="fake-extract",route="/v1/extract",status_code="200"} 1.7746285396250381e+09
-llm_api_request_created{cached="false",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 1.774628539684918e+09
-llm_api_request_created{cached="false",model_id="unknown",route="/v1/extract/jobs/793b39cbc8534122817c9c25f350efe8",status_code="200"} 1.7746285397666976e+09
-llm_api_request_created{cached="false",model_id="unknown",route="/metrics",status_code="200"} 1.7746285401509633e+09
-llm_api_request_created{cached="false",model_id="admin",route="/v1/admin/traces",status_code="200"} 1.7746285401690764e+09
-llm_api_request_created{cached="false",model_id="admin",route="/v1/admin/logs",status_code="200"} 1.7746285402052116e+09
-llm_api_request_created{cached="false",model_id="unknown",route="/v1/extract/jobs/d3787fad891541d3bd5b938903af71b4",status_code="200"} 1.7746285758576667e+09
+llm_api_request_created{cached="false",model_id="unknown",route="/healthz",status_code="200"} 1.7747219200277145e+09
+llm_api_request_created{cached="false",model_id="unknown",route="/readyz",status_code="200"} 1.7747219252154036e+09
+llm_api_request_created{cached="false",model_id="fake-extract",route="/v1/extract",status_code="200"} 1.774721953245114e+09
+llm_api_request_created{cached="false",model_id="unknown",route="/v1/extract/jobs",status_code="202"} 1.7747219533171632e+09
+llm_api_request_created{cached="false",model_id="unknown",route="/v1/extract/jobs/{job_id}",status_code="200"} 1.7747219533979802e+09
+llm_api_request_created{cached="false",model_id="unknown",route="/metrics",status_code="200"} 1.7747219538121855e+09
+llm_api_request_created{cached="false",model_id="admin",route="/v1/admin/traces",status_code="200"} 1.7747219538308656e+09
+llm_api_request_created{cached="false",model_id="admin",route="/v1/admin/logs",status_code="200"} 1.7747219538646302e+09
 # HELP llm_redis_hits_total Redis cache hits
 # TYPE llm_redis_hits_total counter
 # HELP llm_redis_misses_total Redis cache misses
@@ -240,7 +220,7 @@ llm_redis_enabled 1.0
 llm_extraction_requests_total{model_id="fake-extract",schema_id="sroie_receipt_v1"} 2.0
 # HELP llm_extraction_requests_created Total extraction requests
 # TYPE llm_extraction_requests_created gauge
-llm_extraction_requests_created{model_id="fake-extract",schema_id="sroie_receipt_v1"} 1.7746285394706812e+09
+llm_extraction_requests_created{model_id="fake-extract",schema_id="sroie_receipt_v1"} 1.7747219531292038e+09
 # HELP llm_extraction_cache_hits_total Extraction cache hits by layer
 # TYPE llm_extraction_cache_hits_total counter
 # HELP llm_extraction_validation_failures_total Extraction failures due to parse or schema validation issues
@@ -252,7 +232,7 @@ llm_extraction_requests_created{model_id="fake-extract",schema_id="sroie_receipt
 llm_loader_ops_total{op="load_model"} 2.0
 # HELP llm_loader_ops_created Count of llm_loader operations
 # TYPE llm_loader_ops_created gauge
-llm_loader_ops_created{op="load_model"} 1.7746285394705827e+09
+llm_loader_ops_created{op="load_model"} 1.7747219531290743e+09
 # HELP llm_loader_ops_fail_total Count of failed llm_loader operations
 # TYPE llm_loader_ops_fail_total counter
 # HELP llm_loader_op_latency_seconds Latency of llm_loader operations (seconds)
@@ -273,10 +253,10 @@ llm_loader_op_latency_seconds_bucket{le="7.5",op="load_model"} 2.0
 llm_loader_op_latency_seconds_bucket{le="10.0",op="load_model"} 2.0
 llm_loader_op_latency_seconds_bucket{le="+Inf",op="load_model"} 2.0
 llm_loader_op_latency_seconds_count{op="load_model"} 2.0
-llm_loader_op_latency_seconds_sum{op="load_model"} 0.00015650000000277942
+llm_loader_op_latency_seconds_sum{op="load_model"} 0.00015800000255694613
 # HELP llm_loader_op_latency_seconds_created Latency of llm_loader operations (seconds)
 # TYPE llm_loader_op_latency_seconds_created gauge
-llm_loader_op_latency_seconds_created{op="load_model"} 1.774628539470652e+09
+llm_loader_op_latency_seconds_created{op="load_model"} 1.774721953129167e+09
 # HELP llm_model_loaded 1 if in-process model weights are loaded (transformers), else 0
 # TYPE llm_model_loaded gauge
 llm_model_loaded 0.0
@@ -301,13 +281,13 @@ llm_generate_in_flight 0.0
 llm_generate_gate_enters_total 2.0
 # HELP llm_generate_gate_enters_created Number of /v1/generate requests that entered the gate (queued or immediate)
 # TYPE llm_generate_gate_enters_created gauge
-llm_generate_gate_enters_created 1.7746285093885355e+09
+llm_generate_gate_enters_created 1.7747219182405899e+09
 # HELP llm_generate_gate_starts_total Number of /v1/generate requests that started execution (semaphore acquired)
 # TYPE llm_generate_gate_starts_total counter
 llm_generate_gate_starts_total 2.0
 # HELP llm_generate_gate_starts_created Number of /v1/generate requests that started execution (semaphore acquired)
 # TYPE llm_generate_gate_starts_created gauge
-llm_generate_gate_starts_created 1.7746285093885412e+09
+llm_generate_gate_starts_created 1.7747219182405944e+09
 # HELP llm_generate_gate_timeouts_total Number of /v1/generate requests that timed out waiting or executing in the gate
 # TYPE llm_generate_gate_timeouts_total counter
 # HELP llm_generate_queue_wait_seconds Time spent waiting in /v1/generate gate queue before execution
@@ -325,10 +305,10 @@ llm_generate_queue_wait_seconds_bucket{le="10.0"} 2.0
 llm_generate_queue_wait_seconds_bucket{le="30.0"} 2.0
 llm_generate_queue_wait_seconds_bucket{le="+Inf"} 2.0
 llm_generate_queue_wait_seconds_count 2.0
-llm_generate_queue_wait_seconds_sum 7.584000059068785e-06
+llm_generate_queue_wait_seconds_sum 8.584000170230865e-06
 # HELP llm_generate_queue_wait_seconds_created Time spent waiting in /v1/generate gate queue before execution
 # TYPE llm_generate_queue_wait_seconds_created gauge
-llm_generate_queue_wait_seconds_created 1.7746285093885543e+09
+llm_generate_queue_wait_seconds_created 1.7747219182406065e+09
 # HELP llm_generate_execution_seconds Time spent executing /v1/generate while holding concurrency slot
 # TYPE llm_generate_execution_seconds histogram
 llm_generate_execution_seconds_bucket{le="0.01"} 2.0
@@ -345,7 +325,7 @@ llm_generate_execution_seconds_bucket{le="60.0"} 2.0
 llm_generate_execution_seconds_bucket{le="120.0"} 2.0
 llm_generate_execution_seconds_bucket{le="+Inf"} 2.0
 llm_generate_execution_seconds_count 2.0
-llm_generate_execution_seconds_sum 0.0002965419998872676
+llm_generate_execution_seconds_sum 0.00026495799829717726
 # HELP llm_generate_execution_seconds_created Time spent executing /v1/generate while holding concurrency slot
 # TYPE llm_generate_execution_seconds_created gauge
-llm_generate_execution_seconds_created 1.7746285093885827e+09
+llm_generate_execution_seconds_created 1.774721918240629e+09

@@ -151,6 +151,13 @@ proof/run_local_stack.sh down
 
 This harness reuses the backend repository's host-published infra and observability compose profiles, then starts the backend, worker, and gateway on the host with the canonical Phase 2 contract.
 
+When `PHASE2_WITH_OTEL=1` (the default), the local stack also brings up:
+
+- OpenTelemetry Collector on `http://127.0.0.1:4318/v1/traces`
+- Jaeger on `http://127.0.0.1:16686`
+
+The host-run gateway, backend, and worker export OTLP/HTTP traces into that collector by default.
+
 ## Phase 2 Kind Stack Harness
 
 Canonical entrypoint:

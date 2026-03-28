@@ -16,6 +16,7 @@ ARTIFACT_DIR="${SCRIPT_DIR}/artifacts/kind_stack"
 : "${PHASE2_KIND_NAMESPACE:=llm}"
 : "${PHASE2_KIND_API_LOCAL_PORT:=18080}"
 : "${PHASE2_KIND_GATEWAY_LOCAL_PORT:=18084}"
+: "${PHASE2_KIND_JAEGER_LOCAL_PORT:=16686}"
 : "${PHASE2_PROOF_USER_KEY:=proof-user-key}"
 : "${PHASE2_PROOF_ADMIN_KEY:=proof-admin-key}"
 
@@ -86,6 +87,37 @@ wait_for_url() {
   return 1
 }
 
+wait_for_jaeger_services() {
+  local url="$1"
+  shift
+  local required_services=("$@")
+  local attempts=80
+  local services_json=""
+
+  for _ in $(seq 1 "${attempts}"); do
+    if services_json="$(curl -fsS "${url}" 2>/dev/null)"; then
+      local missing=0
+      local service=""
+      for service in "${required_services[@]}"; do
+        if ! grep -q "\"${service}\"" <<<"${services_json}"; then
+          missing=1
+          break
+        fi
+      done
+      if [[ "${missing}" -eq 0 ]]; then
+        printf '%s' "${services_json}"
+        return 0
+      fi
+    fi
+    sleep 0.5
+  done
+
+  if [[ -n "${services_json}" ]]; then
+    printf '%s' "${services_json}"
+  fi
+  return 1
+}
+
 start_port_forward() {
   local resource="$1"
   local mapping="$2"
@@ -125,6 +157,8 @@ cmd_up() {
   wait_for_deployment "api"
 
   kubectl apply -k "${GATEWAY_KUSTOMIZATION}"
+  wait_for_deployment "otel-collector"
+  wait_for_deployment "jaeger"
   wait_for_deployment "extract-worker"
   wait_for_deployment "gateway"
   wait_for_job_complete "seed-proof-keys"
@@ -133,6 +167,7 @@ cmd_up() {
   echo "Namespace: ${PHASE2_KIND_NAMESPACE}"
   echo "Backend overlay: ${BACKEND_OVERLAY}"
   echo "Integrated add-ons: ${GATEWAY_KUSTOMIZATION}"
+  echo "Jaeger UI: kubectl -n ${PHASE2_KIND_NAMESPACE} port-forward svc/jaeger ${PHASE2_KIND_JAEGER_LOCAL_PORT}:16686"
   echo "Use proof/run_kind_stack.sh proof to run the observability pack via port-forward."
 }
 
@@ -164,10 +199,15 @@ cmd_proof() {
   mkdir -p "${ARTIFACT_DIR}"
   local api_pf_log="${ARTIFACT_DIR}/port-forward-api.log"
   local gateway_pf_log="${ARTIFACT_DIR}/port-forward-gateway.log"
+  local jaeger_pf_log="${ARTIFACT_DIR}/port-forward-jaeger.log"
   local api_pf_pid=""
   local gateway_pf_pid=""
+  local jaeger_pf_pid=""
 
   cleanup() {
+    if [[ -n "${jaeger_pf_pid:-}" ]]; then
+      kill "${jaeger_pf_pid}" >/dev/null 2>&1 || true
+    fi
     if [[ -n "${gateway_pf_pid:-}" ]]; then
       kill "${gateway_pf_pid}" >/dev/null 2>&1 || true
     fi
@@ -179,9 +219,11 @@ cmd_proof() {
 
   api_pf_pid="$(start_port_forward "svc/api" "${PHASE2_KIND_API_LOCAL_PORT}:8000" "${api_pf_log}")"
   gateway_pf_pid="$(start_port_forward "svc/gateway" "${PHASE2_KIND_GATEWAY_LOCAL_PORT}:8080" "${gateway_pf_log}")"
+  jaeger_pf_pid="$(start_port_forward "svc/jaeger" "${PHASE2_KIND_JAEGER_LOCAL_PORT}:16686" "${jaeger_pf_log}")"
 
   wait_for_url "http://127.0.0.1:${PHASE2_KIND_API_LOCAL_PORT}/healthz"
   wait_for_url "http://127.0.0.1:${PHASE2_KIND_GATEWAY_LOCAL_PORT}/healthz"
+  wait_for_url "http://127.0.0.1:${PHASE2_KIND_JAEGER_LOCAL_PORT}"
 
   env \
     LLM_EXTRACTION_PLATFORM_BASE_URL="http://127.0.0.1:${PHASE2_KIND_API_LOCAL_PORT}" \
@@ -190,6 +232,21 @@ cmd_proof() {
     GATEWAY_BASE_URL="http://127.0.0.1:${PHASE2_KIND_GATEWAY_LOCAL_PORT}" \
     "${SCRIPT_DIR}/generate_llm_extraction_platform_observability_pack.sh" \
     "${ARTIFACT_DIR}/observability_latest"
+
+  local jaeger_services_json="${ARTIFACT_DIR}/jaeger-services.json"
+  if ! wait_for_jaeger_services \
+    "http://127.0.0.1:${PHASE2_KIND_JAEGER_LOCAL_PORT}/api/services" \
+    "inference-serving-gateway" \
+    "llm-extraction-platform" \
+    "llm-extraction-platform-worker" >"${jaeger_services_json}"; then
+    echo "Jaeger did not register all expected services in time." >&2
+    echo "Last Jaeger services payload:" >&2
+    cat "${jaeger_services_json}" >&2
+    return 1
+  fi
+
+  echo "Jaeger services captured at ${jaeger_services_json}"
+  echo "Jaeger UI is available during this proof run at http://127.0.0.1:${PHASE2_KIND_JAEGER_LOCAL_PORT}"
 }
 
 main() {

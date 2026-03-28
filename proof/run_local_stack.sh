@@ -41,10 +41,18 @@ DEFAULT_GATEWAY_URL="http://127.0.0.1:18082"
 : "${PHASE2_REDIS_HOST_PORT:=6379}"
 : "${PHASE2_PROM_HOST_PORT:=9091}"
 : "${PHASE2_GRAFANA_PORT:=3000}"
+: "${PHASE2_OTEL_COLLECTOR_PORT:=4318}"
+: "${PHASE2_OTEL_COLLECTOR_HEALTH_PORT:=13133}"
+: "${PHASE2_JAEGER_PORT:=16686}"
 : "${PHASE2_PROOF_GATEWAY_PORT:=18083}"
 : "${PHASE2_PROOF_USER_KEY:=proof-user-key}"
 : "${PHASE2_PROOF_ADMIN_KEY:=proof-admin-key}"
 : "${PHASE2_WITH_OBS:=1}"
+: "${PHASE2_WITH_OTEL:=1}"
+: "${PHASE2_OTEL_EXPORTER_OTLP_ENDPOINT:=http://127.0.0.1:${PHASE2_OTEL_COLLECTOR_PORT}/v1/traces}"
+: "${PHASE2_BACKEND_OTEL_SERVICE_NAME:=llm-extraction-platform}"
+: "${PHASE2_WORKER_OTEL_SERVICE_NAME:=llm-extraction-platform-worker}"
+: "${PHASE2_GATEWAY_OTEL_SERVICE_NAME:=inference-serving-gateway}"
 
 usage() {
   cat <<'EOF'
@@ -63,6 +71,7 @@ Optional environment overrides:
   PHASE2_SCHEMAS_DIR=...                  Override schema directory
   PHASE2_PROOF_USER_KEY=...               Override proof standard API key
   PHASE2_PROOF_ADMIN_KEY=...              Override proof admin API key
+  PHASE2_WITH_OTEL=0                      Skip Collector/Jaeger on `up`
 EOF
 }
 
@@ -106,6 +115,38 @@ PY
   return 1
 }
 
+wait_for_database_url() {
+  local database_url="$1"
+  local attempts="${2:-80}"
+  for _ in $(seq 1 "${attempts}"); do
+    if env DATABASE_URL="${database_url}" /Users/chranama/career/llm-extraction-platform/server/.venv/bin/python - <<'PY' >/dev/null 2>&1
+import asyncio
+import os
+import asyncpg
+
+def normalize_database_url(raw: str) -> str:
+    if raw.startswith("postgresql+asyncpg://"):
+        return "postgresql://" + raw[len("postgresql+asyncpg://"):]
+    return raw
+
+async def main() -> None:
+    conn = await asyncpg.connect(normalize_database_url(os.environ["DATABASE_URL"]))
+    try:
+        await conn.execute("SELECT 1")
+    finally:
+        await conn.close()
+
+asyncio.run(main())
+PY
+    then
+      return 0
+    fi
+    sleep 0.5
+  done
+  echo "Timed out waiting for database connection: ${database_url}" >&2
+  return 1
+}
+
 need_file() {
   local path="$1"
   if [[ ! -f "${path}" ]]; then
@@ -130,6 +171,8 @@ DATABASE_URL=${PHASE2_DATABASE_URL}
 REDIS_ENABLED=1
 REDIS_URL=${PHASE2_REDIS_URL}
 EDGE_MODE=behind_gateway
+OTEL_ENABLED=${PHASE2_WITH_OTEL}
+OTEL_EXPORTER_OTLP_ENDPOINT=${PHASE2_OTEL_EXPORTER_OTLP_ENDPOINT}
 EOF
 }
 
@@ -148,6 +191,9 @@ compose_up_selected() {
   if [[ "${PHASE2_WITH_OBS}" == "1" ]]; then
     profiles+=(obs-host)
   fi
+  if [[ "${PHASE2_WITH_OTEL}" == "1" ]]; then
+    profiles+=(otel-host)
+  fi
   local -a cmd=(docker compose -f "${COMPOSE_FILE}")
   local profile
   for profile in "${profiles[@]}"; do
@@ -159,6 +205,9 @@ compose_up_selected() {
     REDIS_HOST_PORT="${PHASE2_REDIS_HOST_PORT}" \
     PROM_HOST_PORT="${PHASE2_PROM_HOST_PORT}" \
     GRAFANA_PORT="${PHASE2_GRAFANA_PORT}" \
+    OTEL_COLLECTOR_HOST_PORT="${PHASE2_OTEL_COLLECTOR_PORT}" \
+    OTEL_COLLECTOR_HEALTH_HOST_PORT="${PHASE2_OTEL_COLLECTOR_HEALTH_PORT}" \
+    JAEGER_PORT="${PHASE2_JAEGER_PORT}" \
     "${cmd[@]}"
 }
 
@@ -166,6 +215,9 @@ compose_down_selected() {
   local -a profiles=(infra-host)
   if [[ "${PHASE2_WITH_OBS}" == "1" ]]; then
     profiles+=(obs-host)
+  fi
+  if [[ "${PHASE2_WITH_OTEL}" == "1" ]]; then
+    profiles+=(otel-host)
   fi
   local -a cmd=(docker compose -f "${COMPOSE_FILE}")
   local profile
@@ -178,6 +230,9 @@ compose_down_selected() {
     REDIS_HOST_PORT="${PHASE2_REDIS_HOST_PORT}" \
     PROM_HOST_PORT="${PHASE2_PROM_HOST_PORT}" \
     GRAFANA_PORT="${PHASE2_GRAFANA_PORT}" \
+    OTEL_COLLECTOR_HOST_PORT="${PHASE2_OTEL_COLLECTOR_PORT}" \
+    OTEL_COLLECTOR_HEALTH_HOST_PORT="${PHASE2_OTEL_COLLECTOR_HEALTH_PORT}" \
+    JAEGER_PORT="${PHASE2_JAEGER_PORT}" \
     "${cmd[@]}"
 }
 
@@ -243,6 +298,9 @@ start_backend_process() {
       REDIS_ENABLED=1 \
       REDIS_URL="${PHASE2_REDIS_URL}" \
       EDGE_MODE=behind_gateway \
+      OTEL_ENABLED="${PHASE2_WITH_OTEL}" \
+      OTEL_SERVICE_NAME="${PHASE2_BACKEND_OTEL_SERVICE_NAME}" \
+      OTEL_EXPORTER_OTLP_ENDPOINT="${PHASE2_OTEL_EXPORTER_OTLP_ENDPOINT}" \
       /Users/chranama/career/llm-extraction-platform/server/.venv/bin/python \
       -m uvicorn llm_server.main:app \
       --host "${PHASE2_BACKEND_HOST}" \
@@ -269,6 +327,9 @@ start_worker_process() {
       REDIS_ENABLED=1 \
       REDIS_URL="${PHASE2_REDIS_URL}" \
       EDGE_MODE=behind_gateway \
+      OTEL_ENABLED="${PHASE2_WITH_OTEL}" \
+      OTEL_SERVICE_NAME="${PHASE2_WORKER_OTEL_SERVICE_NAME}" \
+      OTEL_EXPORTER_OTLP_ENDPOINT="${PHASE2_OTEL_EXPORTER_OTLP_ENDPOINT}" \
       /Users/chranama/career/llm-extraction-platform/server/.venv/bin/python \
       -m llm_server.worker.extract_jobs \
       --poll-timeout-seconds 1 \
@@ -287,6 +348,9 @@ start_gateway_process() {
     nohup env \
       GATEWAY_LISTEN_ADDR="${PHASE2_GATEWAY_HOST}:${PHASE2_GATEWAY_PORT}" \
       GATEWAY_UPSTREAM_BASE_URL="${DEFAULT_BACKEND_URL}" \
+      GATEWAY_OTEL_ENABLED="${PHASE2_WITH_OTEL}" \
+      GATEWAY_OTEL_SERVICE_NAME="${PHASE2_GATEWAY_OTEL_SERVICE_NAME}" \
+      GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT="${PHASE2_OTEL_EXPORTER_OTLP_ENDPOINT}" \
       go run ./cmd/gateway \
       >"${GATEWAY_LOG}" 2>&1 &
     echo $! >"${GATEWAY_PID_FILE}"
@@ -396,7 +460,12 @@ cmd_up() {
   write_env_file
   compose_up_selected
   wait_for_tcp "127.0.0.1" "${PHASE2_PG_HOST_PORT}" 120
+  wait_for_database_url "${PHASE2_DATABASE_URL}" 120
   wait_for_tcp "127.0.0.1" "${PHASE2_REDIS_HOST_PORT}" 120
+  if [[ "${PHASE2_WITH_OTEL}" == "1" ]]; then
+    wait_for_tcp "127.0.0.1" "${PHASE2_OTEL_COLLECTOR_PORT}" 120
+    wait_for_url "http://127.0.0.1:${PHASE2_JAEGER_PORT}"
+  fi
   run_migrations
   seed_proof_keys
   start_backend_process
@@ -409,6 +478,8 @@ cmd_up() {
   echo "Gateway: ${DEFAULT_GATEWAY_URL}"
   echo "Prometheus: http://127.0.0.1:${PHASE2_PROM_HOST_PORT} (if PHASE2_WITH_OBS=1)"
   echo "Grafana: http://127.0.0.1:${PHASE2_GRAFANA_PORT} (if PHASE2_WITH_OBS=1)"
+  echo "OTel Collector: http://127.0.0.1:${PHASE2_OTEL_COLLECTOR_PORT}/v1/traces (if PHASE2_WITH_OTEL=1)"
+  echo "Jaeger: http://127.0.0.1:${PHASE2_JAEGER_PORT} (if PHASE2_WITH_OTEL=1)"
   echo "Env contract: ${ENV_FILE}"
 }
 
@@ -439,7 +510,10 @@ cmd_status() {
         REDIS_HOST_PORT="${PHASE2_REDIS_HOST_PORT}" \
         PROM_HOST_PORT="${PHASE2_PROM_HOST_PORT}" \
         GRAFANA_PORT="${PHASE2_GRAFANA_PORT}" \
-        docker compose -f "${COMPOSE_FILE}" ps postgres_host redis_host prometheus_host grafana || true
+        OTEL_COLLECTOR_HOST_PORT="${PHASE2_OTEL_COLLECTOR_PORT}" \
+        OTEL_COLLECTOR_HEALTH_HOST_PORT="${PHASE2_OTEL_COLLECTOR_HEALTH_PORT}" \
+        JAEGER_PORT="${PHASE2_JAEGER_PORT}" \
+        docker compose -f "${COMPOSE_FILE}" ps postgres_host redis_host prometheus_host grafana otel_collector_host jaeger || true
     else
       echo "infra: docker unavailable"
     fi

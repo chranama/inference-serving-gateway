@@ -5,5 +5,10 @@ namespace: llm
 resources:
   - gateway-deployment.yaml
   - gateway-service.yaml
+  - jaeger-deployment.yaml
+  - jaeger-service.yaml
+  - otel-collector-configmap.yaml
+  - otel-collector-deployment.yaml
+  - otel-collector-service.yaml
   - worker-deployment.yaml
   - seed-proof-keys-job.yaml

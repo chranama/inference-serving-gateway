@@ -22,6 +22,12 @@ spec:
               value: ":8080"
             - name: GATEWAY_UPSTREAM_BASE_URL
               value: "http://api:8000"
+            - name: GATEWAY_OTEL_ENABLED
+              value: "1"
+            - name: GATEWAY_OTEL_SERVICE_NAME
+              value: "inference-serving-gateway"
+            - name: GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector:4318/v1/traces"
           ports:
             - containerPort: 8080
           readinessProbe:

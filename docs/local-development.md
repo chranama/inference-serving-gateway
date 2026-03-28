@@ -48,9 +48,20 @@ This harness:
 
 - starts host-published Postgres and Redis via the backend repo compose file
 - starts host-published Prometheus and Grafana via the backend repo host-observability profile
+- starts host-published OpenTelemetry Collector and Jaeger via the backend repo host-OTel profile
 - applies backend migrations
 - seeds canonical proof API keys
 - starts the host-run backend, async worker, and gateway
+
+Canonical local trace endpoints:
+
+- Collector OTLP/HTTP: `http://127.0.0.1:4318/v1/traces`
+- Jaeger UI: `http://127.0.0.1:16686`
+
+Optional flags:
+
+- `PHASE2_WITH_OBS=0`: skip Prometheus and Grafana
+- `PHASE2_WITH_OTEL=0`: skip Collector and Jaeger
 
 Companion commands:
 

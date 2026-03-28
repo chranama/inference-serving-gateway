@@ -1,4 +1,4 @@
-# Phase 2 Kind Deployment Contract
+# Kind Deployment Contract
 
 This is the Kubernetes-shaped Phase 2 path for the integrated runtime stack.
 
@@ -15,6 +15,7 @@ The kind harness uses:
 
 - a local `kind` cluster
 - Kubernetes deployments for the backend API, async worker, and gateway
+- in-cluster OpenTelemetry Collector and Jaeger
 - in-cluster Postgres and Redis from the backend repo's Kubernetes base
 - port-forwarded proof runs against the deployed services
 
@@ -73,6 +74,13 @@ Gateway:
 - deployment name: `gateway`
 - service name: `gateway`
 - upstream target: `http://api:8000`
+- OTel service name: `inference-serving-gateway`
+
+Tracing add-ons:
+
+- collector deployment/service: `otel-collector`
+- Jaeger deployment/service: `jaeger`
+- OTLP HTTP endpoint inside the cluster: `http://otel-collector:4318/v1/traces`
 
 Seed job:
 
@@ -87,6 +95,7 @@ The kind proof path port-forwards:
 
 - `svc/api` to a local backend port
 - `svc/gateway` to a local gateway port
+- `svc/jaeger` to a local Jaeger UI port
 
 Then it runs:
 
@@ -96,5 +105,12 @@ with:
 
 - direct backend/admin access via the port-forwarded API service
 - gateway routing exercised via the port-forwarded gateway service
+- Jaeger service discovery verified through the port-forwarded UI API
 
 This keeps the proof pack semantics aligned with Phase 1 and Phase 1.5 while validating the actual in-cluster deployment shape.
+
+If you want to inspect Jaeger manually outside the proof command, use:
+
+```bash
+kubectl -n llm port-forward svc/jaeger 16686:16686
+```

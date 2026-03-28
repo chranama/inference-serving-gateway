@@ -24,6 +24,10 @@ Canonical local ports:
 - gateway: `127.0.0.1:18082`
 - Postgres: `127.0.0.1:5433`
 - Redis: `127.0.0.1:6379`
+- Prometheus: `127.0.0.1:9091`
+- Grafana: `127.0.0.1:3000`
+- OTel Collector: `127.0.0.1:4318`
+- Jaeger: `127.0.0.1:16686`
 
 Canonical flow:
 
@@ -57,6 +61,8 @@ DATABASE_URL=postgresql+asyncpg://llm:llm@127.0.0.1:5433/llm
 REDIS_ENABLED=1
 REDIS_URL=redis://127.0.0.1:6379/0
 EDGE_MODE=behind_gateway
+OTEL_ENABLED=1
+OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318/v1/traces
 ```
 
 Why each matters:
@@ -66,6 +72,14 @@ Why each matters:
 - `MODELS_YAML=...models.observability-proof.yaml`: removes dependence on temp files
 - `SCHEMAS_DIR=.../schemas/model_output`: makes schema resolution explicit and stable
 - `EDGE_MODE=behind_gateway`: required for trusted gateway trace propagation
+- `OTEL_ENABLED=1`: enables local distributed tracing in the canonical stack
+- `OTEL_EXPORTER_OTLP_ENDPOINT=...`: exports gateway/backend/worker spans into the local collector
+
+Canonical local OTel service names:
+
+- backend: `llm-extraction-platform`
+- worker: `llm-extraction-platform-worker`
+- gateway: `inference-serving-gateway`
 
 ## Proof Fixture Contract
 
