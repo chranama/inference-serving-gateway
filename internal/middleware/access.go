@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chranama/inference-serving-gateway/internal/observability"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type statusRecorder struct {
@@ -44,6 +45,7 @@ func Access(logger *slog.Logger, metrics *observability.Metrics, routeName, upst
 
 			duration := time.Since(start)
 			metrics.ObserveEdgeRequest(routeName, r.Method, status, duration)
+			observability.SetHTTPResponse(trace.SpanFromContext(r.Context()), status, recorder.bytes)
 
 			logger.Info("gateway request",
 				"request_id", GetRequestID(r.Context()),

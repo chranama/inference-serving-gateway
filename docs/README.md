@@ -4,6 +4,7 @@
 - [Local Development](local-development.md)
 - [`llm-extraction-platform` Integration Notes](llm-extraction-platform-integration.md)
 - [Trace Identity Contract](trace-identity-contract.md)
+- [OpenTelemetry Contract](opentelemetry-contract.md)
 - [Integrated Observability Walkthrough](observability-walkthrough.md)
 - [Local Environment Contract](local-environment-contract.md)
 - [Kind Deployment Contract](kind-deployment-contract.md)

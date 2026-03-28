@@ -12,7 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chranama/inference-serving-gateway/internal/middleware"
 	"github.com/chranama/inference-serving-gateway/internal/observability"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -86,18 +90,41 @@ func (c *Client) GetJobStatus(ctx context.Context, jobID string, headers http.He
 
 func (c *Client) forward(ctx context.Context, routeName, method, path string, body []byte, headers http.Header) (*Response, error) {
 	target := c.baseURL.ResolveReference(&url.URL{Path: path})
+	requestID := middleware.GetRequestID(ctx)
+	traceID := middleware.GetTraceID(ctx)
+
+	ctx, span := observability.Tracer("http.client").Start(
+		ctx,
+		"upstream."+routeName,
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			observability.UpstreamRequestAttributes(
+				routeName,
+				method,
+				path,
+				target.Host,
+				requestID,
+				traceID,
+			)...,
+		),
+	)
+	defer span.End()
+
 	req, err := http.NewRequestWithContext(ctx, method, target.String(), bytes.NewReader(body))
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, fmt.Errorf("build upstream request: %w", err)
 	}
 
 	copyHeaders(req.Header, headers)
 	req.Header.Set("X-Gateway-Proxy", "inference-serving-gateway")
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 
 	start := time.Now()
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		duration := time.Since(start)
+		observability.RecordError(span, err)
 		result := "unavailable"
 		if isTimeoutError(err) {
 			result = "timeout"
@@ -112,12 +139,14 @@ func (c *Client) forward(ctx context.Context, routeName, method, path string, bo
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		duration := time.Since(start)
+		observability.RecordError(span, err)
 		c.metrics.ObserveUpstreamRequest(routeName, method, "unavailable", duration)
 		return nil, ErrUnavailable
 	}
 
 	duration := time.Since(start)
 	c.metrics.ObserveUpstreamRequest(routeName, method, fmt.Sprintf("%d", resp.StatusCode), duration)
+	observability.SetHTTPResponse(span, resp.StatusCode, len(responseBody))
 
 	return &Response{
 		StatusCode: resp.StatusCode,

@@ -83,6 +83,7 @@ func NewHandler(cfg config.Config, logger *slog.Logger, metrics *observability.M
 func (s *Server) wrap(routeName string, handler http.Handler, options routeOptions) http.Handler {
 	middlewares := []func(http.Handler) http.Handler{
 		middleware.RequestIdentity,
+		middleware.TraceRequest(routeName),
 		middleware.Access(s.logger, s.metrics, routeName, s.upstreamClient.BaseHost()),
 	}
 

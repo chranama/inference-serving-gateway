@@ -29,6 +29,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	tracingRuntime, err := observability.SetupTracing(context.Background(), cfg, logger)
+	if err != nil {
+		logger.Error("failed to configure tracing", "error", err)
+		os.Exit(1)
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := tracingRuntime.Shutdown(ctx); err != nil {
+			logger.Error("failed to shutdown tracing", "error", err)
+		}
+	}()
+
 	metrics, err := observability.NewMetrics()
 	if err != nil {
 		logger.Error("failed to create metrics", "error", err)
@@ -49,7 +62,13 @@ func main() {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
-	logger.Info("gateway starting", "listen_addr", cfg.ListenAddr, "upstream_base_url", cfg.UpstreamBaseURL)
+	logger.Info(
+		"gateway starting",
+		"listen_addr", cfg.ListenAddr,
+		"upstream_base_url", cfg.UpstreamBaseURL,
+		"otel_enabled", tracingRuntime.Enabled,
+		"otel_service_name", tracingRuntime.ServiceName,
+	)
 
 	shutdownCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

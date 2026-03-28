@@ -14,6 +14,8 @@ const (
 	defaultRequestTimeout         = 30 * time.Second
 	defaultLogLevel               = "info"
 	defaultEnableMetrics          = true
+	defaultOTelEnabled            = false
+	defaultOTelServiceName        = "inference-serving-gateway"
 	defaultAllowExtract           = true
 	defaultAllowExtractJobs       = true
 	defaultAllowJobStatus         = true
@@ -23,18 +25,21 @@ const (
 
 // Config contains runtime configuration for the gateway.
 type Config struct {
-	ListenAddr         string
-	UpstreamBaseURL    string
-	RequestTimeout     time.Duration
-	LogLevel           string
-	EnableMetrics      bool
-	AllowExtract       bool
-	AllowExtractJobs   bool
-	AllowJobStatus     bool
-	MaxBodyBytes       int64
-	ConcurrencyLimit   int
-	RateLimitPerSecond float64
-	RateLimitBurst     int
+	ListenAddr               string
+	UpstreamBaseURL          string
+	RequestTimeout           time.Duration
+	LogLevel                 string
+	EnableMetrics            bool
+	OTelEnabled              bool
+	OTelServiceName          string
+	OTelExporterOTLPEndpoint string
+	AllowExtract             bool
+	AllowExtractJobs         bool
+	AllowJobStatus           bool
+	MaxBodyBytes             int64
+	ConcurrencyLimit         int
+	RateLimitPerSecond       float64
+	RateLimitBurst           int
 }
 
 // Load reads gateway configuration from environment variables.
@@ -44,6 +49,8 @@ func Load() (Config, error) {
 		RequestTimeout:     defaultRequestTimeout,
 		LogLevel:           defaultLogLevel,
 		EnableMetrics:      defaultEnableMetrics,
+		OTelEnabled:        defaultOTelEnabled,
+		OTelServiceName:    defaultOTelServiceName,
 		AllowExtract:       defaultAllowExtract,
 		AllowExtractJobs:   defaultAllowExtractJobs,
 		AllowJobStatus:     defaultAllowJobStatus,
@@ -74,6 +81,15 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	cfg.OTelEnabled, err = envBool("GATEWAY_OTEL_ENABLED", cfg.OTelEnabled)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.OTelServiceName = envString("GATEWAY_OTEL_SERVICE_NAME", cfg.OTelServiceName)
+	cfg.OTelExporterOTLPEndpoint = envString(
+		"GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT",
+		cfg.OTelExporterOTLPEndpoint,
+	)
 	cfg.AllowExtract, err = envBool("GATEWAY_ALLOW_EXTRACT", cfg.AllowExtract)
 	if err != nil {
 		return Config{}, err
@@ -105,6 +121,15 @@ func Load() (Config, error) {
 
 	if cfg.RequestTimeout <= 0 {
 		return Config{}, fmt.Errorf("GATEWAY_REQUEST_TIMEOUT must be positive")
+	}
+	if cfg.OTelServiceName == "" {
+		return Config{}, fmt.Errorf("GATEWAY_OTEL_SERVICE_NAME must not be empty")
+	}
+	if cfg.OTelExporterOTLPEndpoint != "" {
+		parsedOTLPURL, err := url.Parse(cfg.OTelExporterOTLPEndpoint)
+		if err != nil || parsedOTLPURL.Scheme == "" || parsedOTLPURL.Host == "" {
+			return Config{}, fmt.Errorf("GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT must be a valid absolute URL")
+		}
 	}
 	if cfg.MaxBodyBytes <= 0 {
 		return Config{}, fmt.Errorf("GATEWAY_MAX_BODY_BYTES must be positive")
