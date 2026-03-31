@@ -1,0 +1,10 @@
+aws_region            = "us-east-1"
+environment           = "dev"
+cluster_name          = "llm-runtime-dev"
+namespace             = "llm"
+availability_zones    = ["us-east-1a"]
+enable_nat_gateway    = false
+ephemeral_environment = true
+
+gateway_ecr_repository_name = "inference-serving-gateway"
+backend_ecr_repository_name = "llm-server"
