@@ -1,15 +1,21 @@
-# Docs Index
+# Documentation
 
-- [Architecture Notes](architecture.md)
-- [Local Development](local-development.md)
-- [`llm-extraction-platform` Integration Notes](llm-extraction-platform-integration.md)
-- [Trace Identity Contract](trace-identity-contract.md)
-- [OpenTelemetry Contract](opentelemetry-contract.md)
-- [Integrated Observability Walkthrough](observability-walkthrough.md)
-- [OpenTelemetry Walkthrough](opentelemetry-walkthrough.md)
-- [Local Environment Contract](local-environment-contract.md)
-- [Kind Deployment Contract](kind-deployment-contract.md)
-- [AWS Deployment Contract](aws-deployment-contract.md)
-- [v1 Rollout Plan](v1-rollout-plan.md)
-- [v1 Release Checklist](v1-release-checklist.md)
-- [v1+ Future Improvements](v1+-future-improvements.md)
+This directory contains the current technical documentation for
+`inference-serving-gateway`.
+
+Start with the root [`README.md`](../README.md). Use these documents when you
+want more detail about system structure, API behavior, backend integration,
+tests, local operation, artifacts, or scope boundaries.
+
+## Documents
+
+- [Architecture](architecture.md): service shape, request flow, and ownership boundaries.
+- [API](api.md): endpoint surface, headers, errors, and runtime configuration.
+- [Backend Integration](backend-integration.md): how the gateway works with `llm-extraction-platform`.
+- [Testing](testing.md): test layout, behavior coverage, and commands.
+- [Runbook](runbook.md): start, verify, observe, and shut down local workflows.
+- [Artifacts](artifacts.md): generated runtime artifacts and how to interpret them.
+- [Scope](scope.md): current claims, non-claims, and known limits.
+
+Archived documentation lives in [`../archive/docs/`](../archive/docs/). Treat it
+as historical context, not as current implementation guidance.

@@ -142,9 +142,14 @@ Semantics note:
 - async poll requests are expected to show up in request logs and trace events
 - `async_poll_logs.json` may therefore be empty without indicating a proof failure
 
-Phase 2 local-environment contract:
+Current integration docs:
 
-- `/Users/chranama/career/inference-serving-gateway/docs/local-environment-contract.md`
+- `/Users/chranama/career/inference-serving-gateway/docs/backend-integration.md`
+- `/Users/chranama/career/inference-serving-gateway/docs/artifacts.md`
+
+Historical local-environment contract:
+
+- `/Users/chranama/career/inference-serving-gateway/archive/docs/local-environment-contract.md`
 
 ## Phase 2 Local Stack Harness
 
@@ -200,7 +205,12 @@ This harness is the Kubernetes-shaped companion to the Compose-backed local stac
 - exports Jaeger-backed sync and async trace artifacts into the same pack
 - captures `jaeger-services.json` as a proof artifact
 
-Kind contract docs:
+Current integration docs:
 
-- `/Users/chranama/career/inference-serving-gateway/docs/kind-deployment-contract.md`
-- `/Users/chranama/career/llm-extraction-platform/docs/kind-deployment-contract.md`
+- `/Users/chranama/career/inference-serving-gateway/docs/backend-integration.md`
+- `/Users/chranama/career/inference-serving-gateway/docs/runbook.md`
+
+Historical kind contract docs:
+
+- `/Users/chranama/career/inference-serving-gateway/archive/docs/kind-deployment-contract.md`
+- `/Users/chranama/career/llm-extraction-platform/archive/docs/kind-deployment-contract.md`

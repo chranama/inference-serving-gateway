@@ -74,4 +74,8 @@ The default gateway OTel service name is:
 
 - `inference-serving-gateway`
 
-Later slices will extend the trace path into the backend API and async worker.
+Phase 2.2 expects the distributed trace path to extend through:
+
+- gateway request handling
+- backend API request handling
+- async worker continuation

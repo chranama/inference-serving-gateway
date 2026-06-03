@@ -76,12 +76,12 @@ Open these in order:
 2. `manifest.json`
 3. `sync_trace_detail.json`
 4. `async_trace_detail.json`
-5. `sync_otel_trace.json` when present
-6. `async_otel_trace.json` when present
+5. `sync_otel_trace.json`
+6. `async_otel_trace.json`
 7. `gateway.metrics.txt`
 8. `backend.metrics.txt`
 
-If the pack was generated through the Phase 2 local or kind harnesses, the OTel exports should be present.
+If the pack was generated through the canonical Phase 2 local or kind harnesses, the OTel exports should be present.
 
 OTel-specific walkthrough:
 
@@ -181,4 +181,4 @@ This proof is successful if a reviewer can see that:
 - sync and async flows are both inspectable
 - the OTel transport trace path complements, rather than replaces, the application trace/event model
 
-That is the core Phase 1 outcome.
+That is the core Phase 2.2 outcome.

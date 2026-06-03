@@ -6,9 +6,9 @@ Planning reference:
 
 - `/Users/chranama/career/job-search/audit/2026-03-28__phase2-3-aws-deployment-slice-implementation-plan.md`
 
-Gateway-side AWS contract:
+Gateway-side AWS contract history:
 
-- `/Users/chranama/career/inference-serving-gateway/docs/aws-deployment-contract.md`
+- `/Users/chranama/career/inference-serving-gateway/archive/docs/aws-deployment-contract.md`
 
 ## Purpose
 

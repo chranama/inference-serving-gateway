@@ -8,6 +8,10 @@ This document maps the most important Phase 1 observability signals across:
 The goal is not metric-name unification at all costs.
 The goal is fast reviewer understanding of what each layer owns.
 
+For the Phase 2.2.9 decision, label, and SLO contract that sits above these raw metrics, see:
+
+- [Runtime Decision Contract](runtime-decision-contract.md)
+
 ## Gateway Metrics
 
 These metrics describe edge/runtime behavior.

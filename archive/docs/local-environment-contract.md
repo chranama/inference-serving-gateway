@@ -134,6 +134,8 @@ Minimum expected outputs:
 - `backend.metrics.txt`
 - `sync_trace_detail.json`
 - `async_trace_detail.json`
+- `sync_otel_trace.json`
+- `async_otel_trace.json`
 - `sync_logs.json`
 - `async_logs.json`
 - `async_poll_logs.json`
