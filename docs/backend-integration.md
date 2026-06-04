@@ -39,42 +39,12 @@ The backend must trust gateway-provided identity headers when running behind the
 gateway. In the local integration harness this is represented by backend
 `EDGE_MODE=behind_gateway`.
 
-## Integration Commands
+## Running The Integration
 
-Run the basic live-backend integration probe:
+The runbook contains the runnable sequences for the live-backend probe, local
+stack harness, Kubernetes-shaped local stack, artifact generation, and shutdown:
 
-```bash
-LLM_EXTRACTION_PLATFORM_BASE_URL=http://127.0.0.1:8000 \
-LLM_EXTRACTION_PLATFORM_API_KEY=... \
-proof/run_llm_extraction_platform_integration.sh
-```
-
-Generate the integrated observability artifact bundle:
-
-```bash
-LLM_EXTRACTION_PLATFORM_BASE_URL=http://127.0.0.1:8000 \
-LLM_EXTRACTION_PLATFORM_API_KEY=... \
-LLM_EXTRACTION_PLATFORM_ADMIN_API_KEY=... \
-proof/generate_llm_extraction_platform_observability_pack.sh
-```
-
-Run the local stack harness:
-
-```bash
-proof/run_local_stack.sh up
-proof/run_local_stack.sh status
-proof/run_local_stack.sh proof
-proof/run_local_stack.sh down
-```
-
-Run the local `kind` harness:
-
-```bash
-proof/run_kind_stack.sh up
-proof/run_kind_stack.sh status
-proof/run_kind_stack.sh proof
-proof/run_kind_stack.sh down
-```
+- [Runbook: Backend Integration](runbook.md#backend-integration-stack)
 
 ## Inspectable Outputs
 

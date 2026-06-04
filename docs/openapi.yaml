@@ -1,0 +1,317 @@
+openapi: 3.1.0
+info:
+  title: Inference Serving Gateway API
+  version: 1.0.0
+  description: >
+    Gateway-owned API surface for forwarding extraction requests to an upstream
+    inference backend. Successful extraction payloads are backend-owned and
+    forwarded by the gateway.
+servers:
+  - url: http://127.0.0.1:18080
+    description: Local mock gateway
+paths:
+  /healthz:
+    get:
+      summary: Gateway liveness
+      responses:
+        "200":
+          description: Gateway process is live.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                ok:
+                  value:
+                    status: ok
+  /readyz:
+    get:
+      summary: Gateway readiness
+      responses:
+        "200":
+          description: Gateway can reach upstream readiness.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                ready:
+                  value:
+                    status: ready
+        "503":
+          $ref: "#/components/responses/UpstreamUnavailable"
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        "200":
+          description: Gateway metrics in Prometheus text format.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /v1/extract:
+    post:
+      summary: Forward synchronous extraction
+      parameters:
+        - $ref: "#/components/parameters/RequestID"
+        - $ref: "#/components/parameters/TraceID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+            examples:
+              mock:
+                value:
+                  schema_id: demo_schema_v1
+                  text: "Vendor: ACME\nTotal: 10.00"
+      responses:
+        "200":
+          description: Backend-owned extraction response forwarded by the gateway.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+            X-Trace-ID:
+              $ref: "#/components/headers/TraceID"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              examples:
+                mock:
+                  value:
+                    path: /v1/extract
+                    method: POST
+                    body: "{\"schema_id\":\"demo_schema_v1\",\"text\":\"Vendor: ACME\\nTotal: 10.00\"}"
+                    request_id: proof-request-1
+                    trace_id: proof-trace-1
+        "403":
+          $ref: "#/components/responses/RouteNotAllowed"
+        "413":
+          $ref: "#/components/responses/RequestTooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ConcurrencyLimited"
+        "504":
+          $ref: "#/components/responses/UpstreamTimeout"
+  /v1/extract/jobs:
+    post:
+      summary: Forward asynchronous extraction submission
+      parameters:
+        - $ref: "#/components/parameters/RequestID"
+        - $ref: "#/components/parameters/TraceID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+            examples:
+              mock:
+                value:
+                  schema_id: demo_schema_v1
+                  text: "Vendor: ACME\nTotal: 10.00"
+      responses:
+        "202":
+          description: Backend-owned async job submission response.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+            X-Trace-ID:
+              $ref: "#/components/headers/TraceID"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              examples:
+                mock:
+                  value:
+                    job_id: job-123
+                    status: queued
+                    request_id: proof-request-2
+                    trace_id: proof-trace-2
+        "403":
+          $ref: "#/components/responses/RouteNotAllowed"
+        "413":
+          $ref: "#/components/responses/RequestTooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ConcurrencyLimited"
+        "504":
+          $ref: "#/components/responses/UpstreamTimeout"
+  /v1/extract/jobs/{job_id}:
+    get:
+      summary: Forward asynchronous extraction status polling
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/RequestID"
+        - $ref: "#/components/parameters/TraceID"
+      responses:
+        "200":
+          description: Backend-owned async job status response.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+            X-Trace-ID:
+              $ref: "#/components/headers/TraceID"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              examples:
+                mock:
+                  value:
+                    job_id: job-123
+                    status: succeeded
+                    request_id: proof-request-3
+                    trace_id: proof-trace-2
+        "403":
+          $ref: "#/components/responses/RouteNotAllowed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ConcurrencyLimited"
+        "504":
+          $ref: "#/components/responses/UpstreamTimeout"
+components:
+  parameters:
+    RequestID:
+      name: X-Request-ID
+      in: header
+      required: false
+      schema:
+        type: string
+      description: Client request id. The gateway assigns one when missing.
+    TraceID:
+      name: X-Trace-ID
+      in: header
+      required: false
+      schema:
+        type: string
+      description: Application trace id. The gateway assigns one when missing.
+  headers:
+    RequestID:
+      description: Effective gateway request id.
+      schema:
+        type: string
+    TraceID:
+      description: Effective application trace id.
+      schema:
+        type: string
+  responses:
+    RequestTooLarge:
+      description: Request body exceeds the gateway size limit.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EdgeErrorResponse"
+          examples:
+            requestTooLarge:
+              value:
+                error:
+                  code: request_too_large
+                  message: request body exceeds gateway limit
+                  request_id: proof-request-1
+    RouteNotAllowed:
+      description: Route disabled by gateway policy.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EdgeErrorResponse"
+          examples:
+            routeNotAllowed:
+              value:
+                error:
+                  code: route_not_allowed
+                  message: route is not allowed by gateway policy
+                  request_id: proof-request-1
+    RateLimited:
+      description: Request exceeds configured rate limit.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EdgeErrorResponse"
+          examples:
+            rateLimited:
+              value:
+                error:
+                  code: rate_limited
+                  message: rate limit exceeded
+                  request_id: proof-request-1
+    ConcurrencyLimited:
+      description: Request exceeds configured concurrency limit.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EdgeErrorResponse"
+          examples:
+            concurrencyLimited:
+              value:
+                error:
+                  code: concurrency_limited
+                  message: global concurrency limit reached
+                  request_id: proof-request-1
+    UpstreamTimeout:
+      description: Upstream request timed out.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EdgeErrorResponse"
+          examples:
+            upstreamTimeout:
+              value:
+                error:
+                  code: upstream_timeout
+                  message: upstream request timed out
+                  request_id: proof-request-1
+    UpstreamUnavailable:
+      description: Upstream readiness or forwarding failed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EdgeErrorResponse"
+          examples:
+            upstreamUnavailable:
+              value:
+                error:
+                  code: upstream_unavailable
+                  message: upstream request failed
+                  request_id: proof-request-1
+  schemas:
+    StatusResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+    EdgeErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            request_id:
+              type: string

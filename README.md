@@ -7,6 +7,11 @@ request and trace identity, structured edge errors, readiness, metrics, and
 OpenTelemetry propagation. The upstream backend still owns model execution,
 extraction semantics, schema validation, and async job state.
 
+An inference gateway sits between clients and a model-serving backend. It does
+not run the model itself; it controls which requests are admitted, forwards
+accepted requests, and preserves request identity so behavior can be traced
+across services.
+
 ## What It Does
 
 - Serves `POST /v1/extract` for synchronous extraction forwarding.
@@ -29,37 +34,22 @@ extraction semantics, schema validation, and async job state.
 - `tests/`: gateway integration tests with mock upstream behavior.
 - `proof/`: local scripts and saved runtime artifacts.
 
-## Commands
+## Run Locally
 
-Run tests:
+The local runbook provides the step-by-step guide for starting, verifying,
+observing, and shutting down the gateway:
 
-```bash
-go test ./...
-```
+- [Runbook](docs/runbook.md)
 
-Run the gateway against the bundled mock upstream:
-
-```bash
-python3 proof/mock_upstream.py --port 18081
-GATEWAY_UPSTREAM_BASE_URL=http://127.0.0.1:18081 go run ./cmd/gateway
-```
-
-Generate local mock-upstream artifacts:
-
-```bash
-proof/generate_mock_proof.sh
-```
-
-Run the mock Compose stack:
-
-```bash
-docker compose -f deployments/docker-compose.mock.yml up --build
-```
+It covers mock upstream startup, gateway startup, health checks, artifact
+generation, Docker Compose, backend integration, Kubernetes-shaped local runs,
+and cleanup.
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
 - [API](docs/api.md)
+- [OpenAPI](docs/openapi.yaml)
 - [Backend Integration](docs/backend-integration.md)
 - [Testing](docs/testing.md)
 - [Runbook](docs/runbook.md)

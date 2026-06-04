@@ -3,6 +3,37 @@
 The gateway exposes extraction, health, readiness, and metrics endpoints. It
 forwards accepted extraction requests to the configured upstream backend.
 
+An inference gateway sits between a client and a model-serving backend. It does
+not run the model itself; it controls which requests are admitted, forwards
+accepted requests, and preserves request identity so behavior can be traced
+across services.
+
+## OpenAPI
+
+The static OpenAPI contract lives at:
+
+- [openapi.yaml](openapi.yaml)
+
+The Go service does not currently host a Swagger UI. The OpenAPI file can be
+opened in Swagger Editor or another OpenAPI viewer when an interactive contract
+view is useful.
+
+## Gateway Boundary
+
+Successful extraction responses are backend-owned and forwarded by the gateway.
+The gateway does not parse extraction schemas, execute models, validate model
+outputs, or manage async job state.
+
+Gateway-owned behavior includes:
+
+- request and trace identity headers
+- route allowlist decisions
+- request-size, rate, concurrency, and timeout admission
+- readiness checks against the upstream backend
+- Prometheus metrics
+- OpenTelemetry propagation
+- structured edge errors
+
 ## Runtime Endpoints
 
 | Method | Path | Behavior |
@@ -20,33 +51,162 @@ Unsupported routes return an edge-owned `unsupported_route` error.
 
 The gateway preserves client-provided identity headers when present:
 
-- `X-Request-ID`
-- `X-Trace-ID`
+| Header | Direction | Behavior |
+|---|---|---|
+| `X-Request-ID` | request and response | Client request id. Assigned by the gateway when missing. |
+| `X-Trace-ID` | request and response | Application trace id. Assigned by the gateway when missing. |
+| `X-Gateway-Proxy` | upstream request | Set to `inference-serving-gateway` for forwarded requests. |
 
-When either header is missing, the gateway assigns one. Responses include the
-gateway request id and the effective trace id.
+Backend auth or API-key headers are forwarded when supplied by the client.
 
-The gateway also sends:
+## Health And Readiness
 
-- `X-Gateway-Proxy: inference-serving-gateway`
+### `GET /healthz`
 
-to the upstream backend so the backend can identify gateway-routed traffic.
+`/healthz` checks whether the gateway process is live. It does not call the
+upstream backend.
 
-## OpenTelemetry
+Example response:
 
-When OpenTelemetry is enabled, the gateway creates server spans for incoming
-requests and client spans for upstream calls. It injects W3C trace context into
-the forwarded upstream request.
+```json
+{
+  "status": "ok"
+}
+```
 
-Configuration:
+### `GET /readyz`
 
-- `GATEWAY_OTEL_ENABLED`
-- `GATEWAY_OTEL_SERVICE_NAME`
-- `GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT`
+`/readyz` calls upstream `/readyz`. It returns ready only when the backend is
+reachable and responds with a 2xx status.
+
+Example response:
+
+```json
+{
+  "status": "ready"
+}
+```
+
+If the upstream readiness check fails, the gateway returns `upstream_unavailable`.
+
+## Synchronous Extraction
+
+### `POST /v1/extract`
+
+The gateway forwards the request body to upstream `/v1/extract` without
+interpreting the extraction payload.
+
+The mock proof run uses this request body:
+
+```json
+{
+  "schema_id": "demo_schema_v1",
+  "text": "Vendor: ACME\nTotal: 10.00"
+}
+```
+
+Example request:
+
+```bash
+curl -fsS -X POST "http://127.0.0.1:18080/v1/extract" \
+  -H "Content-Type: application/json" \
+  -H "X-Request-ID: proof-request-1" \
+  -H "X-Trace-ID: proof-trace-1" \
+  --data '{
+    "schema_id": "demo_schema_v1",
+    "text": "Vendor: ACME\nTotal: 10.00"
+  }'
+```
+
+Example mock response:
+
+```json
+{
+  "path": "/v1/extract",
+  "method": "POST",
+  "body": "{\"schema_id\":\"demo_schema_v1\",\"text\":\"Vendor: ACME\\nTotal: 10.00\"}",
+  "request_id": "proof-request-1",
+  "trace_id": "proof-trace-1"
+}
+```
+
+Real backend response fields depend on the configured upstream service. The
+gateway preserves the response status and non-hop-by-hop response headers, then
+sets `X-Request-ID` and `X-Trace-ID` on the client response.
+
+## Asynchronous Extraction
+
+### `POST /v1/extract/jobs`
+
+The gateway forwards the request body to upstream `/v1/extract/jobs` and returns
+the upstream job-submission response.
+
+Example request:
+
+```bash
+curl -fsS -X POST "http://127.0.0.1:18080/v1/extract/jobs" \
+  -H "Content-Type: application/json" \
+  -H "X-Request-ID: proof-request-2" \
+  -H "X-Trace-ID: proof-trace-2" \
+  --data '{
+    "schema_id": "demo_schema_v1",
+    "text": "Vendor: ACME\nTotal: 10.00"
+  }'
+```
+
+Example mock response:
+
+```json
+{
+  "job_id": "job-123",
+  "status": "queued",
+  "request_id": "proof-request-2",
+  "trace_id": "proof-trace-2"
+}
+```
+
+### `GET /v1/extract/jobs/{job_id}`
+
+The gateway forwards job-status polling to upstream
+`/v1/extract/jobs/{job_id}`. Async job state is backend-owned.
+
+Example request:
+
+```bash
+curl -fsS "http://127.0.0.1:18080/v1/extract/jobs/job-123" \
+  -H "X-Request-ID: proof-request-3" \
+  -H "X-Trace-ID: proof-trace-2"
+```
+
+Example mock response:
+
+```json
+{
+  "job_id": "job-123",
+  "status": "succeeded",
+  "trace_id": "proof-trace-2",
+  "request_id": "proof-request-3"
+}
+```
+
+The polling request has its own request id while preserving the async workflow's
+trace id.
 
 ## Edge-Owned Errors
 
-The gateway returns structured JSON errors for edge-owned failures.
+The gateway returns structured JSON errors for failures it owns.
+
+Example:
+
+```json
+{
+  "error": {
+    "code": "request_too_large",
+    "message": "request body exceeds gateway limit",
+    "request_id": "proof-request-1"
+  }
+}
+```
 
 | Code | Typical Status | Cause |
 |---|---:|---|
@@ -61,20 +221,34 @@ The gateway returns structured JSON errors for edge-owned failures.
 
 Backend-owned errors pass through as upstream responses.
 
-## Runtime Configuration
+## OpenTelemetry
 
-- `GATEWAY_LISTEN_ADDR`
-- `GATEWAY_UPSTREAM_BASE_URL`
-- `GATEWAY_REQUEST_TIMEOUT`
-- `GATEWAY_LOG_LEVEL`
-- `GATEWAY_ENABLE_METRICS`
+When OpenTelemetry is enabled, the gateway creates server spans for incoming
+requests and client spans for upstream calls. It injects W3C trace context into
+the forwarded upstream request.
+
+Configuration:
+
 - `GATEWAY_OTEL_ENABLED`
 - `GATEWAY_OTEL_SERVICE_NAME`
 - `GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT`
-- `GATEWAY_ALLOW_EXTRACT`
-- `GATEWAY_ALLOW_EXTRACT_JOBS`
-- `GATEWAY_ALLOW_JOB_STATUS`
-- `GATEWAY_MAX_BODY_BYTES`
-- `GATEWAY_CONCURRENCY_LIMIT`
-- `GATEWAY_RATE_LIMIT_PER_SECOND`
-- `GATEWAY_RATE_LIMIT_BURST`
+
+## Runtime Configuration
+
+| Variable | Purpose |
+|---|---|
+| `GATEWAY_LISTEN_ADDR` | Gateway listen address. Defaults to `:8080`. |
+| `GATEWAY_UPSTREAM_BASE_URL` | Required absolute URL for the upstream backend. |
+| `GATEWAY_REQUEST_TIMEOUT` | Timeout budget for upstream-facing routes. |
+| `GATEWAY_LOG_LEVEL` | Structured log level. |
+| `GATEWAY_ENABLE_METRICS` | Enables `/metrics`. |
+| `GATEWAY_OTEL_ENABLED` | Enables OpenTelemetry tracing. |
+| `GATEWAY_OTEL_SERVICE_NAME` | Service name used in traces. |
+| `GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP exporter endpoint. |
+| `GATEWAY_ALLOW_EXTRACT` | Enables or disables `POST /v1/extract`. |
+| `GATEWAY_ALLOW_EXTRACT_JOBS` | Enables or disables `POST /v1/extract/jobs`. |
+| `GATEWAY_ALLOW_JOB_STATUS` | Enables or disables `GET /v1/extract/jobs/{job_id}`. |
+| `GATEWAY_MAX_BODY_BYTES` | Maximum accepted request body size. |
+| `GATEWAY_CONCURRENCY_LIMIT` | Concurrent request admission limit. |
+| `GATEWAY_RATE_LIMIT_PER_SECOND` | Token refill rate for request rate limiting. |
+| `GATEWAY_RATE_LIMIT_BURST` | Rate-limit burst size. |

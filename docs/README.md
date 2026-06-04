@@ -11,6 +11,7 @@ tests, local operation, artifacts, or scope boundaries.
 
 - [Architecture](architecture.md): service shape, request flow, and ownership boundaries.
 - [API](api.md): endpoint surface, headers, errors, and runtime configuration.
+- [OpenAPI](openapi.yaml): static OpenAPI contract for the gateway-owned API surface.
 - [Backend Integration](backend-integration.md): how the gateway works with `llm-extraction-platform`.
 - [Testing](testing.md): test layout, behavior coverage, and commands.
 - [Runbook](runbook.md): start, verify, observe, and shut down local workflows.

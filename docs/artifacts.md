@@ -4,13 +4,20 @@ The repository keeps saved runtime artifacts for mock and backend-integrated
 runs. They are useful for inspecting behavior without rerunning every local
 stack.
 
+## What To Inspect First
+
+- `summary.md`: human-readable run summary and validated expectations.
+- `manifest.json`: machine-readable checks and artifact inventory.
+- `extract.body.json`: synchronous forwarding and identity propagation.
+- `extract_jobs.body.json`: async submission forwarding and identity propagation.
+- `job_status.body.json`: async polling and trace continuity.
+- Metrics files: gateway and upstream visibility for the captured run.
+- Trace and log files: cross-service correlation when the backend integration
+  stack is available.
+
 ## Mock Upstream Artifacts
 
-Generate:
-
-```bash
-proof/generate_mock_proof.sh
-```
+Generate these artifacts through the runbook's mock artifact workflow.
 
 Output directory:
 
@@ -40,17 +47,7 @@ against a local mock backend.
 
 ## Backend Integration Artifacts
 
-Generate through:
-
-```bash
-proof/run_local_stack.sh proof
-```
-
-or:
-
-```bash
-proof/run_kind_stack.sh proof
-```
+Generate these artifacts through the runbook's local backend or `kind` workflow.
 
 Output directories:
 
