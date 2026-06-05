@@ -1,0 +1,207 @@
+{
+  "query_name": "mock_compose_otel_extract",
+  "service": "inference-serving-gateway",
+  "tags": {
+    "llm.trace_id": "otel-proof-trace-1"
+  },
+  "trace_count": 1,
+  "selected_trace_id": "9d7241f95524731fa90a7b6476261985",
+  "selected_trace_services": [
+    "inference-serving-gateway"
+  ],
+  "data": {
+    "traceID": "9d7241f95524731fa90a7b6476261985",
+    "spans": [
+      {
+        "traceID": "9d7241f95524731fa90a7b6476261985",
+        "spanID": "1415be1874a58ac3",
+        "operationName": "upstream.extract",
+        "references": [
+          {
+            "refType": "CHILD_OF",
+            "traceID": "9d7241f95524731fa90a7b6476261985",
+            "spanID": "9c8bfd80381edaba"
+          }
+        ],
+        "startTime": 1780672841661750,
+        "duration": 985,
+        "tags": [
+          {
+            "key": "http.request.method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "key": "http.response.body.size",
+            "type": "int64",
+            "value": 274
+          },
+          {
+            "key": "http.response.status_code",
+            "type": "int64",
+            "value": 200
+          },
+          {
+            "key": "internal.span.format",
+            "type": "string",
+            "value": "otlp"
+          },
+          {
+            "key": "llm.component",
+            "type": "string",
+            "value": "gateway"
+          },
+          {
+            "key": "llm.request_id",
+            "type": "string",
+            "value": "otel-proof-request-1"
+          },
+          {
+            "key": "llm.route",
+            "type": "string",
+            "value": "extract"
+          },
+          {
+            "key": "llm.trace_id",
+            "type": "string",
+            "value": "otel-proof-trace-1"
+          },
+          {
+            "key": "otel.scope.name",
+            "type": "string",
+            "value": "inference-serving-gateway/http.client"
+          },
+          {
+            "key": "otel.status_code",
+            "type": "string",
+            "value": "OK"
+          },
+          {
+            "key": "server.address",
+            "type": "string",
+            "value": "mock-upstream:18081"
+          },
+          {
+            "key": "span.kind",
+            "type": "string",
+            "value": "client"
+          },
+          {
+            "key": "url.path",
+            "type": "string",
+            "value": "/v1/extract"
+          }
+        ],
+        "logs": [],
+        "processID": "p1",
+        "warnings": null
+      },
+      {
+        "traceID": "9d7241f95524731fa90a7b6476261985",
+        "spanID": "9c8bfd80381edaba",
+        "operationName": "gateway.extract",
+        "references": [],
+        "startTime": 1780672841661488,
+        "duration": 1456,
+        "tags": [
+          {
+            "key": "http.request.method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "key": "http.response.body.size",
+            "type": "int64",
+            "value": 274
+          },
+          {
+            "key": "http.response.status_code",
+            "type": "int64",
+            "value": 200
+          },
+          {
+            "key": "internal.span.format",
+            "type": "string",
+            "value": "otlp"
+          },
+          {
+            "key": "llm.component",
+            "type": "string",
+            "value": "gateway"
+          },
+          {
+            "key": "llm.request_id",
+            "type": "string",
+            "value": "otel-proof-request-1"
+          },
+          {
+            "key": "llm.route",
+            "type": "string",
+            "value": "extract"
+          },
+          {
+            "key": "llm.trace_id",
+            "type": "string",
+            "value": "otel-proof-trace-1"
+          },
+          {
+            "key": "otel.scope.name",
+            "type": "string",
+            "value": "inference-serving-gateway/http.server"
+          },
+          {
+            "key": "otel.status_code",
+            "type": "string",
+            "value": "OK"
+          },
+          {
+            "key": "server.address",
+            "type": "string",
+            "value": "127.0.0.1:18086"
+          },
+          {
+            "key": "span.kind",
+            "type": "string",
+            "value": "server"
+          },
+          {
+            "key": "url.path",
+            "type": "string",
+            "value": "/v1/extract"
+          }
+        ],
+        "logs": [],
+        "processID": "p1",
+        "warnings": null
+      }
+    ],
+    "processes": {
+      "p1": {
+        "serviceName": "inference-serving-gateway",
+        "tags": [
+          {
+            "key": "llm.component",
+            "type": "string",
+            "value": "gateway"
+          },
+          {
+            "key": "telemetry.sdk.language",
+            "type": "string",
+            "value": "go"
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "type": "string",
+            "value": "opentelemetry"
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "type": "string",
+            "value": "1.38.0"
+          }
+        ]
+      }
+    },
+    "warnings": null
+  }
+}

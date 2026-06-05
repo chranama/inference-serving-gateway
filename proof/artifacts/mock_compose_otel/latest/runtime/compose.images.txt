@@ -1,0 +1,5 @@
+CONTAINER                      REPOSITORY                             TAG                 PLATFORM            IMAGE ID            SIZE                CREATED
+deployments-gateway-1          deployments-gateway                    latest              linux/arm64         6bd4a41fecbc        30.1MB              5 seconds ago
+deployments-jaeger-1           jaegertracing/all-in-one               1.62.0              linux/arm64         fa7a6bbc1f41        77.7MB              292 years ago
+deployments-mock-upstream-1    python                                 3.13-alpine         linux/arm64/v8      8d0ffd633c92        48.7MB              292 years ago
+deployments-otel-collector-1   otel/opentelemetry-collector-contrib   0.122.1             linux/arm64         3be133d32e29        310MB               292 years ago

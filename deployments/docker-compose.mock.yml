@@ -4,9 +4,9 @@ services:
     working_dir: /app
     volumes:
       - ..:/app
-    command: ["python", "/app/proof/mock_upstream.py", "--port", "18081"]
+    command: ["python", "/app/proof/mock_upstream.py", "--host", "0.0.0.0", "--port", "18081"]
     ports:
-      - "18081:18081"
+      - "${UPSTREAM_PORT:-18081}:18081"
 
   gateway:
     build:
@@ -17,8 +17,14 @@ services:
     environment:
       GATEWAY_LISTEN_ADDR: ":8080"
       GATEWAY_UPSTREAM_BASE_URL: "http://mock-upstream:18081"
-      GATEWAY_REQUEST_TIMEOUT: "30s"
-      GATEWAY_ENABLE_METRICS: "true"
+      GATEWAY_REQUEST_TIMEOUT: "${GATEWAY_REQUEST_TIMEOUT:-30s}"
+      GATEWAY_ENABLE_METRICS: "${GATEWAY_ENABLE_METRICS:-true}"
+      GATEWAY_ALLOW_EXTRACT: "${GATEWAY_ALLOW_EXTRACT:-true}"
+      GATEWAY_ALLOW_EXTRACT_JOBS: "${GATEWAY_ALLOW_EXTRACT_JOBS:-true}"
+      GATEWAY_ALLOW_JOB_STATUS: "${GATEWAY_ALLOW_JOB_STATUS:-true}"
+      GATEWAY_MAX_BODY_BYTES: "${GATEWAY_MAX_BODY_BYTES:-1048576}"
+      GATEWAY_CONCURRENCY_LIMIT: "${GATEWAY_CONCURRENCY_LIMIT:-64}"
+      GATEWAY_RATE_LIMIT_PER_SECOND: "${GATEWAY_RATE_LIMIT_PER_SECOND:-0}"
+      GATEWAY_RATE_LIMIT_BURST: "${GATEWAY_RATE_LIMIT_BURST:-1}"
     ports:
-      - "18080:8080"
-
+      - "${GATEWAY_PORT:-18080}:8080"

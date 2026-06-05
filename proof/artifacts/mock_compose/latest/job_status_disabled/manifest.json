@@ -1,0 +1,22 @@
+{
+  "mode": "mock_compose:job_status_disabled",
+  "gateway_url": "http://127.0.0.1:18080",
+  "scenarios": [
+    "job_status_disabled"
+  ],
+  "runtime_config": {
+    "GATEWAY_ALLOW_JOB_STATUS": "false"
+  },
+  "checks": {
+    "job_status_disabled_rejected": true
+  },
+  "artifacts": {
+    "job_status_disabled_status": "job_status_disabled.status",
+    "job_status_disabled_headers": "job_status_disabled.headers",
+    "job_status_disabled_body": "job_status_disabled.body.json"
+  },
+  "interpretation_limits": [
+    "This probe validates gateway behavior against the deterministic mock upstream.",
+    "It does not validate real backend inference semantics."
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "mode": "mock_compose:route_disabled",
+  "gateway_url": "http://127.0.0.1:18080",
+  "scenarios": [
+    "route_disabled"
+  ],
+  "runtime_config": {
+    "GATEWAY_ALLOW_EXTRACT": "false"
+  },
+  "checks": {
+    "route_disabled_rejected": true,
+    "route_disabled_metrics_include_edge_error": true
+  },
+  "artifacts": {
+    "route_disabled_status": "route_disabled.status",
+    "route_disabled_headers": "route_disabled.headers",
+    "route_disabled_body": "route_disabled.body.json",
+    "route_disabled_metrics_status": "route_disabled_metrics.status",
+    "route_disabled_metrics_headers": "route_disabled_metrics.headers",
+    "route_disabled_metrics_body": "route_disabled_metrics.body.txt"
+  },
+  "interpretation_limits": [
+    "This probe validates gateway behavior against the deterministic mock upstream.",
+    "It does not validate real backend inference semantics."
+  ]
+}

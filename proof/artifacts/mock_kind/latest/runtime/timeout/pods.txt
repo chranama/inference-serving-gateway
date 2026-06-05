@@ -1,0 +1,4 @@
+NAME                            READY   STATUS      RESTARTS   AGE     IP           NODE                              NOMINATED NODE   READINESS GATES
+gateway-5cb87b896c-zgxls        0/1     Completed   0          6s      10.244.0.8   inference-gateway-control-plane   <none>           <none>
+gateway-7f54c787df-fllx5        1/1     Running     0          2s      10.244.0.9   inference-gateway-control-plane   <none>           <none>
+mock-upstream-fc648dbd5-2bvxn   1/1     Running     0          2m49s   10.244.0.6   inference-gateway-control-plane   <none>           <none>

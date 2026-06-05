@@ -1,8 +1,11 @@
 # Proof Helpers
 
-This directory contains proof helpers for the gateway in two modes:
+This directory contains proof helpers for the gateway in several modes:
 
-- mock-upstream proof
+- host mock-upstream proof
+- Docker Compose mock proof
+- isolated Docker Compose OTel proof
+- isolated kind mock proof
 - real backend integration proof
 - integrated observability proof
 
@@ -13,7 +16,7 @@ This is the canonical proof path for `inference-serving-gateway v1`.
 Command:
 
 ```bash
-proof/generate_mock_proof.sh
+make proof-host
 ```
 
 What it does:
@@ -49,6 +52,91 @@ What this path proves:
 - gateway-owned request and trace identity behavior
 - readiness and metrics surfaces
 - a reproducible local demo path independent of the real backend
+
+## Docker Compose Mock Proof
+
+Command:
+
+```bash
+make proof-compose
+```
+
+What it does:
+
+- starts the Docker Compose mock stack
+- captures Compose service state, image listings, and container logs
+- probes health, readiness, metrics, sync extract, async submit, and async poll
+- probes timeout, upstream unavailable, request-size, route-policy,
+  concurrency, rate-limit, unsupported-route, async-route-toggle, and
+  metrics-disabled paths
+
+Artifacts are written under:
+
+- `proof/artifacts/mock_compose/latest/`
+
+What this path proves:
+
+- the gateway container can reach the mock upstream container
+- the Docker Compose deployment exercises the same gateway-owned edge behavior
+  as the test suite
+- each phase records the runtime config used to trigger that behavior
+- the artifact manifest identifies Compose runtime state rather than only host
+  process behavior
+
+## Isolated Docker Compose OTel Proof
+
+Command:
+
+```bash
+make proof-otel
+```
+
+What it does:
+
+- starts the gateway, mock upstream, OpenTelemetry Collector, and Jaeger
+- sends a sync extract request with stable request and trace IDs
+- verifies W3C `traceparent` reaches the mock upstream request
+- queries Jaeger for the exported gateway trace
+- validates the gateway server span and upstream client span
+
+Artifacts are written under:
+
+- `proof/artifacts/mock_compose_otel/latest/`
+
+What this path proves:
+
+- the gateway exports OTLP/HTTP traces in isolation
+- the collector forwards traces to Jaeger
+- the gateway injects trace context into upstream calls
+- the isolated OTel story does not require `llm-extraction-platform`
+
+## Isolated Kind Mock Proof
+
+Commands:
+
+```bash
+make proof-kind-up
+make proof-kind
+make proof-kind-down
+```
+
+What it does:
+
+- builds local gateway and mock-upstream images
+- loads them into a local `kind` cluster
+- deploys the gateway and mock upstream with Kubernetes services
+- captures pod, service, deployment, port-forward, and container-log artifacts
+- probes forwarding, identity, metrics, concurrency, and timeout behavior
+
+Artifacts are written under:
+
+- `proof/artifacts/mock_kind/latest/`
+
+What this path proves:
+
+- the gateway runs as an isolated Kubernetes deployment
+- the gateway reaches the mock upstream through cluster DNS
+- the Kubernetes-shaped proof path does not require `llm-extraction-platform`
 
 ## `llm-extraction-platform` Integration Probe
 
@@ -178,7 +266,7 @@ The host-run gateway, backend, and worker export OTLP/HTTP traces into that coll
 
 `proof/run_local_stack.sh proof` now reuses the already-running gateway and Jaeger instance so the generated observability pack includes OTel trace exports as well as the existing application trace/event artifacts.
 
-## Phase 2 Kind Stack Harness
+## Phase 2 Integrated Kind Stack Harness
 
 Canonical entrypoint:
 

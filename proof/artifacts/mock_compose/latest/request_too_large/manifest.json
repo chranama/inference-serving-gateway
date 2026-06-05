@@ -1,0 +1,26 @@
+{
+  "mode": "mock_compose:request_too_large",
+  "gateway_url": "http://127.0.0.1:18080",
+  "scenarios": [
+    "request_too_large"
+  ],
+  "runtime_config": {
+    "GATEWAY_MAX_BODY_BYTES": "4"
+  },
+  "checks": {
+    "request_too_large_rejected": true,
+    "request_too_large_metrics_include_edge_error": true
+  },
+  "artifacts": {
+    "request_too_large_status": "request_too_large.status",
+    "request_too_large_headers": "request_too_large.headers",
+    "request_too_large_body": "request_too_large.body.json",
+    "request_too_large_metrics_status": "request_too_large_metrics.status",
+    "request_too_large_metrics_headers": "request_too_large_metrics.headers",
+    "request_too_large_metrics_body": "request_too_large_metrics.body.txt"
+  },
+  "interpretation_limits": [
+    "This probe validates gateway behavior against the deterministic mock upstream.",
+    "It does not validate real backend inference semantics."
+  ]
+}

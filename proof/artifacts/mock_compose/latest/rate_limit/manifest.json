@@ -1,0 +1,31 @@
+{
+  "mode": "mock_compose:rate_limit",
+  "gateway_url": "http://127.0.0.1:18080",
+  "scenarios": [
+    "rate_limit"
+  ],
+  "runtime_config": {
+    "GATEWAY_RATE_LIMIT_PER_SECOND": "0.01",
+    "GATEWAY_RATE_LIMIT_BURST": "1"
+  },
+  "checks": {
+    "rate_limit_first_request_admitted": true,
+    "rate_limit_second_request_rejected": true,
+    "rate_limit_metrics_include_edge_error": true
+  },
+  "artifacts": {
+    "rate_limit_first_status": "rate_limit_first.status",
+    "rate_limit_first_headers": "rate_limit_first.headers",
+    "rate_limit_first_body": "rate_limit_first.body.json",
+    "rate_limit_second_status": "rate_limit_second.status",
+    "rate_limit_second_headers": "rate_limit_second.headers",
+    "rate_limit_second_body": "rate_limit_second.body.json",
+    "rate_limit_metrics_status": "rate_limit_metrics.status",
+    "rate_limit_metrics_headers": "rate_limit_metrics.headers",
+    "rate_limit_metrics_body": "rate_limit_metrics.body.txt"
+  },
+  "interpretation_limits": [
+    "This probe validates gateway behavior against the deterministic mock upstream.",
+    "It does not validate real backend inference semantics."
+  ]
+}

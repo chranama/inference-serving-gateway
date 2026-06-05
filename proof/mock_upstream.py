@@ -24,6 +24,11 @@ class MockHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _maybe_sleep(self) -> None:
+        sleep_ms = self.headers.get("X-Test-Sleep-MS", "")
+        if sleep_ms:
+            time.sleep(float(sleep_ms) / 1000)
+            return
+
         if self.headers.get("X-Test-Behavior") == "slow":
             time.sleep(1.0)
 
@@ -45,6 +50,7 @@ class MockHandler(BaseHTTPRequestHandler):
                     "status": "succeeded",
                     "trace_id": self.headers.get("X-Trace-ID", ""),
                     "request_id": self.headers.get("X-Request-ID", ""),
+                    "traceparent": self.headers.get("traceparent", ""),
                 },
             )
             return
@@ -65,6 +71,7 @@ class MockHandler(BaseHTTPRequestHandler):
                     "body": raw_body,
                     "request_id": self.headers.get("X-Request-ID", ""),
                     "trace_id": self.headers.get("X-Trace-ID", ""),
+                    "traceparent": self.headers.get("traceparent", ""),
                 },
             )
             return
@@ -77,6 +84,7 @@ class MockHandler(BaseHTTPRequestHandler):
                     "status": "queued",
                     "request_id": self.headers.get("X-Request-ID", ""),
                     "trace_id": self.headers.get("X-Trace-ID", ""),
+                    "traceparent": self.headers.get("traceparent", ""),
                 },
             )
             return
@@ -89,14 +97,14 @@ class MockHandler(BaseHTTPRequestHandler):
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=18081)
     args = parser.parse_args()
 
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), MockHandler)
-    print(f"mock upstream listening on 127.0.0.1:{args.port}")
+    server = ThreadingHTTPServer((args.host, args.port), MockHandler)
+    print(f"mock upstream listening on {args.host}:{args.port}", flush=True)
     server.serve_forever()
 
 
 if __name__ == "__main__":
     main()
-

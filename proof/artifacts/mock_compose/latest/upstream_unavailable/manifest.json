@@ -1,0 +1,30 @@
+{
+  "mode": "mock_compose:upstream_unavailable",
+  "gateway_url": "http://127.0.0.1:18080",
+  "scenarios": [
+    "upstream_unavailable"
+  ],
+  "runtime_config": {
+    "GATEWAY_UPSTREAM_BASE_URL": "http://mock-upstream:18081"
+  },
+  "checks": {
+    "readyz_reports_upstream_unavailable": true,
+    "extract_reports_upstream_unavailable": true,
+    "unavailable_metrics_include_edge_error": true
+  },
+  "artifacts": {
+    "unavailable_readyz_status": "unavailable_readyz.status",
+    "unavailable_readyz_headers": "unavailable_readyz.headers",
+    "unavailable_readyz_body": "unavailable_readyz.body.json",
+    "unavailable_extract_status": "unavailable_extract.status",
+    "unavailable_extract_headers": "unavailable_extract.headers",
+    "unavailable_extract_body": "unavailable_extract.body.json",
+    "unavailable_metrics_status": "unavailable_metrics.status",
+    "unavailable_metrics_headers": "unavailable_metrics.headers",
+    "unavailable_metrics_body": "unavailable_metrics.body.txt"
+  },
+  "interpretation_limits": [
+    "This probe validates gateway behavior against the deterministic mock upstream.",
+    "It does not validate real backend inference semantics."
+  ]
+}

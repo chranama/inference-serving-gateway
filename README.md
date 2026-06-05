@@ -42,8 +42,9 @@ observing, and shutting down the gateway:
 - [Runbook](docs/runbook.md)
 
 It covers mock upstream startup, gateway startup, health checks, artifact
-generation, Docker Compose, backend integration, Kubernetes-shaped local runs,
-and cleanup.
+generation, Docker Compose proof, isolated OpenTelemetry proof, isolated
+Kubernetes proof, backend integration, Kubernetes-shaped backend-integrated
+runs, and cleanup.
 
 ## Documentation
 
@@ -62,8 +63,9 @@ Older planning and rollout notes have been archived under [`archive/docs/`](arch
 
 This repository shows a local, inspectable gateway service for inference-backed
 extraction workflows. It includes a bounded route surface, explicit runtime
-controls, tests for success and failure behavior, and saved artifacts for mock
-and backend-integrated runs.
+controls, tests for success and failure behavior, and saved artifacts for host,
+Compose, isolated OpenTelemetry, isolated Kubernetes, and backend-integrated
+runs.
 
 It does not claim full edge authentication, multi-tenant routing, production
 autoscaling, high availability, or ownership of backend inference semantics.

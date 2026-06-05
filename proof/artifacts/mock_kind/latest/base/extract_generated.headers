@@ -1,0 +1,7 @@
+Content-Type: application/json
+Date: Thu, 04 Jun 2026 23:49:06 GMT
+Server: InferenceGatewayMock/1.0 Python/3.13.13
+X-Request-Id: 8418fec2-8216-4dec-8632-69b815991a65
+X-Trace-Id: 4ca5c677-2390-435b-b403-c9d4c068f3e5
+Content-Length: 234
+Connection: close

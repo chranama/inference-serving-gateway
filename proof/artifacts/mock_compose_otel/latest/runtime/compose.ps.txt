@@ -1,0 +1,4 @@
+NAME                           IMAGE                                          COMMAND                  SERVICE          CREATED         STATUS         PORTS
+deployments-jaeger-1           jaegertracing/all-in-one:1.62.0                "/go/bin/all-in-one-…"   jaeger           6 seconds ago   Up 5 seconds   0.0.0.0:16687->16686/tcp, [::]:16687->16686/tcp
+deployments-mock-upstream-1    python:3.13-alpine                             "python /app/proof/m…"   mock-upstream    6 seconds ago   Up 5 seconds   0.0.0.0:18087->18081/tcp, [::]:18087->18081/tcp
+deployments-otel-collector-1   otel/opentelemetry-collector-contrib:0.122.1   "/otelcol-contrib --…"   otel-collector   6 seconds ago   Up 4 seconds   0.0.0.0:13134->13133/tcp, [::]:13134->13133/tcp

@@ -1,0 +1,44 @@
+services:
+  mock-upstream:
+    image: python:3.13-alpine
+    working_dir: /app
+    volumes:
+      - ..:/app
+    command: ["python", "/app/proof/mock_upstream.py", "--host", "0.0.0.0", "--port", "18081"]
+    ports:
+      - "${UPSTREAM_PORT:-18087}:18081"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "${JAEGER_PORT:-16687}:16686"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.122.1
+    depends_on:
+      - jaeger
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./otel-collector.mock.yml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "${COLLECTOR_HEALTH_PORT:-13134}:13133"
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      - mock-upstream
+      - otel-collector
+    environment:
+      GATEWAY_LISTEN_ADDR: ":8080"
+      GATEWAY_UPSTREAM_BASE_URL: "http://mock-upstream:18081"
+      GATEWAY_REQUEST_TIMEOUT: "30s"
+      GATEWAY_ENABLE_METRICS: "true"
+      GATEWAY_OTEL_ENABLED: "true"
+      GATEWAY_OTEL_SERVICE_NAME: "inference-serving-gateway"
+      GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318/v1/traces"
+    ports:
+      - "${GATEWAY_PORT:-18086}:8080"

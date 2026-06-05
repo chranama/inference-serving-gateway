@@ -1,0 +1,153 @@
+{
+  "mode": "mock_compose",
+  "gateway_url": "http://127.0.0.1:18080",
+  "compose_file": "deployments/docker-compose.mock.yml",
+  "phase_manifests": {
+    "base": "base/manifest.json",
+    "upstream_unavailable": "upstream_unavailable/manifest.json",
+    "timeout": "timeout/manifest.json",
+    "request_too_large": "request_too_large/manifest.json",
+    "route_disabled": "route_disabled/manifest.json",
+    "extract_jobs_disabled": "extract_jobs_disabled/manifest.json",
+    "job_status_disabled": "job_status_disabled/manifest.json",
+    "metrics_disabled": "metrics_disabled/manifest.json",
+    "rate_limit": "rate_limit/manifest.json"
+  },
+  "runtime_config": {
+    "base": {
+      "GATEWAY_REQUEST_TIMEOUT": "2s",
+      "GATEWAY_CONCURRENCY_LIMIT": "1",
+      "GATEWAY_RATE_LIMIT_PER_SECOND": "0"
+    },
+    "upstream_unavailable": {
+      "GATEWAY_UPSTREAM_BASE_URL": "http://mock-upstream:18081"
+    },
+    "timeout": {
+      "GATEWAY_REQUEST_TIMEOUT": "100ms"
+    },
+    "request_too_large": {
+      "GATEWAY_MAX_BODY_BYTES": "4"
+    },
+    "route_disabled": {
+      "GATEWAY_ALLOW_EXTRACT": "false"
+    },
+    "extract_jobs_disabled": {
+      "GATEWAY_ALLOW_EXTRACT_JOBS": "false"
+    },
+    "job_status_disabled": {
+      "GATEWAY_ALLOW_JOB_STATUS": "false"
+    },
+    "metrics_disabled": {
+      "GATEWAY_ENABLE_METRICS": "false"
+    },
+    "rate_limit": {
+      "GATEWAY_RATE_LIMIT_PER_SECOND": "0.01",
+      "GATEWAY_RATE_LIMIT_BURST": "1"
+    }
+  },
+  "checks": {
+    "base.healthz_ok": true,
+    "base.readyz_ready": true,
+    "base.metrics_available": true,
+    "base.metrics_include_gateway_requests_total": true,
+    "base.metrics_include_gateway_upstream_requests_total": true,
+    "base.generated_identity_response_body": true,
+    "base.generated_identity_response_headers": true,
+    "base.provided_extract_identity_preserved": true,
+    "base.async_submit_identity_preserved": true,
+    "base.async_status_identity_preserved": true,
+    "base.concurrency_first_request_completed": true,
+    "base.concurrency_second_request_rejected": true,
+    "base.concurrency_metrics_include_edge_error": true,
+    "base.unsupported_route_rejected": true,
+    "base.unsupported_route_metrics_include_request": true,
+    "upstream_unavailable.readyz_reports_upstream_unavailable": true,
+    "upstream_unavailable.extract_reports_upstream_unavailable": true,
+    "upstream_unavailable.unavailable_metrics_include_edge_error": true,
+    "timeout.timeout_returns_gateway_timeout": true,
+    "timeout.timeout_metrics_include_edge_error": true,
+    "request_too_large.request_too_large_rejected": true,
+    "request_too_large.request_too_large_metrics_include_edge_error": true,
+    "route_disabled.route_disabled_rejected": true,
+    "route_disabled.route_disabled_metrics_include_edge_error": true,
+    "extract_jobs_disabled.extract_jobs_disabled_rejected": true,
+    "job_status_disabled.job_status_disabled_rejected": true,
+    "metrics_disabled.metrics_disabled_route_not_served": true,
+    "rate_limit.rate_limit_first_request_admitted": true,
+    "rate_limit.rate_limit_second_request_rejected": true,
+    "rate_limit.rate_limit_metrics_include_edge_error": true
+  },
+  "artifacts": {
+    "base_manifest": "base/manifest.json",
+    "base_summary": "base/summary.md",
+    "upstream_unavailable_manifest": "upstream_unavailable/manifest.json",
+    "upstream_unavailable_summary": "upstream_unavailable/summary.md",
+    "timeout_manifest": "timeout/manifest.json",
+    "timeout_summary": "timeout/summary.md",
+    "request_too_large_manifest": "request_too_large/manifest.json",
+    "request_too_large_summary": "request_too_large/summary.md",
+    "route_disabled_manifest": "route_disabled/manifest.json",
+    "route_disabled_summary": "route_disabled/summary.md",
+    "extract_jobs_disabled_manifest": "extract_jobs_disabled/manifest.json",
+    "extract_jobs_disabled_summary": "extract_jobs_disabled/summary.md",
+    "job_status_disabled_manifest": "job_status_disabled/manifest.json",
+    "job_status_disabled_summary": "job_status_disabled/summary.md",
+    "metrics_disabled_manifest": "metrics_disabled/manifest.json",
+    "metrics_disabled_summary": "metrics_disabled/summary.md",
+    "rate_limit_manifest": "rate_limit/manifest.json",
+    "rate_limit_summary": "rate_limit/summary.md",
+    "runtime_base_compose_images_txt": "runtime/base/compose.images.txt",
+    "runtime_base_compose_ps_txt": "runtime/base/compose.ps.txt",
+    "runtime_base_gateway_container_log": "runtime/base/gateway.container.log",
+    "runtime_base_mock-upstream_container_log": "runtime/base/mock-upstream.container.log",
+    "runtime_base_runtime-config_env": "runtime/base/runtime-config.env",
+    "runtime_extract_jobs_disabled_compose_images_txt": "runtime/extract_jobs_disabled/compose.images.txt",
+    "runtime_extract_jobs_disabled_compose_ps_txt": "runtime/extract_jobs_disabled/compose.ps.txt",
+    "runtime_extract_jobs_disabled_gateway_container_log": "runtime/extract_jobs_disabled/gateway.container.log",
+    "runtime_extract_jobs_disabled_mock-upstream_container_log": "runtime/extract_jobs_disabled/mock-upstream.container.log",
+    "runtime_extract_jobs_disabled_runtime-config_env": "runtime/extract_jobs_disabled/runtime-config.env",
+    "runtime_final_compose_images_txt": "runtime/final/compose.images.txt",
+    "runtime_final_compose_ps_txt": "runtime/final/compose.ps.txt",
+    "runtime_final_gateway_container_log": "runtime/final/gateway.container.log",
+    "runtime_final_mock-upstream_container_log": "runtime/final/mock-upstream.container.log",
+    "runtime_job_status_disabled_compose_images_txt": "runtime/job_status_disabled/compose.images.txt",
+    "runtime_job_status_disabled_compose_ps_txt": "runtime/job_status_disabled/compose.ps.txt",
+    "runtime_job_status_disabled_gateway_container_log": "runtime/job_status_disabled/gateway.container.log",
+    "runtime_job_status_disabled_mock-upstream_container_log": "runtime/job_status_disabled/mock-upstream.container.log",
+    "runtime_job_status_disabled_runtime-config_env": "runtime/job_status_disabled/runtime-config.env",
+    "runtime_metrics_disabled_compose_images_txt": "runtime/metrics_disabled/compose.images.txt",
+    "runtime_metrics_disabled_compose_ps_txt": "runtime/metrics_disabled/compose.ps.txt",
+    "runtime_metrics_disabled_gateway_container_log": "runtime/metrics_disabled/gateway.container.log",
+    "runtime_metrics_disabled_mock-upstream_container_log": "runtime/metrics_disabled/mock-upstream.container.log",
+    "runtime_metrics_disabled_runtime-config_env": "runtime/metrics_disabled/runtime-config.env",
+    "runtime_rate_limit_compose_images_txt": "runtime/rate_limit/compose.images.txt",
+    "runtime_rate_limit_compose_ps_txt": "runtime/rate_limit/compose.ps.txt",
+    "runtime_rate_limit_gateway_container_log": "runtime/rate_limit/gateway.container.log",
+    "runtime_rate_limit_mock-upstream_container_log": "runtime/rate_limit/mock-upstream.container.log",
+    "runtime_rate_limit_runtime-config_env": "runtime/rate_limit/runtime-config.env",
+    "runtime_request_too_large_compose_images_txt": "runtime/request_too_large/compose.images.txt",
+    "runtime_request_too_large_compose_ps_txt": "runtime/request_too_large/compose.ps.txt",
+    "runtime_request_too_large_gateway_container_log": "runtime/request_too_large/gateway.container.log",
+    "runtime_request_too_large_mock-upstream_container_log": "runtime/request_too_large/mock-upstream.container.log",
+    "runtime_request_too_large_runtime-config_env": "runtime/request_too_large/runtime-config.env",
+    "runtime_route_disabled_compose_images_txt": "runtime/route_disabled/compose.images.txt",
+    "runtime_route_disabled_compose_ps_txt": "runtime/route_disabled/compose.ps.txt",
+    "runtime_route_disabled_gateway_container_log": "runtime/route_disabled/gateway.container.log",
+    "runtime_route_disabled_mock-upstream_container_log": "runtime/route_disabled/mock-upstream.container.log",
+    "runtime_route_disabled_runtime-config_env": "runtime/route_disabled/runtime-config.env",
+    "runtime_timeout_compose_images_txt": "runtime/timeout/compose.images.txt",
+    "runtime_timeout_compose_ps_txt": "runtime/timeout/compose.ps.txt",
+    "runtime_timeout_gateway_container_log": "runtime/timeout/gateway.container.log",
+    "runtime_timeout_mock-upstream_container_log": "runtime/timeout/mock-upstream.container.log",
+    "runtime_timeout_runtime-config_env": "runtime/timeout/runtime-config.env",
+    "runtime_upstream_unavailable_compose_images_txt": "runtime/upstream_unavailable/compose.images.txt",
+    "runtime_upstream_unavailable_compose_ps_txt": "runtime/upstream_unavailable/compose.ps.txt",
+    "runtime_upstream_unavailable_gateway_container_log": "runtime/upstream_unavailable/gateway.container.log",
+    "runtime_upstream_unavailable_mock-upstream_container_log": "runtime/upstream_unavailable/mock-upstream.container.log",
+    "runtime_upstream_unavailable_runtime-config_env": "runtime/upstream_unavailable/runtime-config.env"
+  },
+  "interpretation_limits": [
+    "This manifest validates the Docker Compose mock deployment and gateway-owned edge behavior.",
+    "It does not validate a real inference backend or production-grade Docker operations."
+  ]
+}

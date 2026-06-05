@@ -1,0 +1,22 @@
+{
+  "mode": "mock_compose:metrics_disabled",
+  "gateway_url": "http://127.0.0.1:18080",
+  "scenarios": [
+    "metrics_disabled"
+  ],
+  "runtime_config": {
+    "GATEWAY_ENABLE_METRICS": "false"
+  },
+  "checks": {
+    "metrics_disabled_route_not_served": true
+  },
+  "artifacts": {
+    "metrics_disabled_status": "metrics_disabled.status",
+    "metrics_disabled_headers": "metrics_disabled.headers",
+    "metrics_disabled_body": "metrics_disabled.body.json"
+  },
+  "interpretation_limits": [
+    "This probe validates gateway behavior against the deterministic mock upstream.",
+    "It does not validate real backend inference semantics."
+  ]
+}

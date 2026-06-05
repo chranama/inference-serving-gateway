@@ -1,0 +1,59 @@
+{
+  "mode": "mock_kind:base",
+  "gateway_url": "http://127.0.0.1:18085",
+  "scenarios": [
+    "base",
+    "concurrency"
+  ],
+  "checks": {
+    "healthz_ok": true,
+    "readyz_ready": true,
+    "metrics_available": true,
+    "metrics_include_gateway_requests_total": true,
+    "metrics_include_gateway_upstream_requests_total": true,
+    "generated_identity_response_body": true,
+    "generated_identity_response_headers": true,
+    "provided_extract_identity_preserved": true,
+    "async_submit_identity_preserved": true,
+    "async_status_identity_preserved": true,
+    "concurrency_first_request_completed": true,
+    "concurrency_second_request_rejected": true,
+    "concurrency_metrics_include_edge_error": true
+  },
+  "artifacts": {
+    "healthz_status": "healthz.status",
+    "healthz_headers": "healthz.headers",
+    "healthz_body": "healthz.body.json",
+    "readyz_status": "readyz.status",
+    "readyz_headers": "readyz.headers",
+    "readyz_body": "readyz.body.json",
+    "metrics_status": "metrics.status",
+    "metrics_headers": "metrics.headers",
+    "metrics_body": "metrics.body.txt",
+    "extract_generated_status": "extract_generated.status",
+    "extract_generated_headers": "extract_generated.headers",
+    "extract_generated_body": "extract_generated.body.json",
+    "extract_provided_status": "extract_provided.status",
+    "extract_provided_headers": "extract_provided.headers",
+    "extract_provided_body": "extract_provided.body.json",
+    "extract_jobs_status": "extract_jobs.status",
+    "extract_jobs_headers": "extract_jobs.headers",
+    "extract_jobs_body": "extract_jobs.body.json",
+    "job_status_status": "job_status.status",
+    "job_status_headers": "job_status.headers",
+    "job_status_body": "job_status.body.json",
+    "concurrency_second_status": "concurrency_second.status",
+    "concurrency_second_headers": "concurrency_second.headers",
+    "concurrency_second_body": "concurrency_second.body.json",
+    "concurrency_first_slow_status": "concurrency_first_slow.status",
+    "concurrency_first_slow_headers": "concurrency_first_slow.headers",
+    "concurrency_first_slow_body": "concurrency_first_slow.body.json",
+    "concurrency_metrics_status": "concurrency_metrics.status",
+    "concurrency_metrics_headers": "concurrency_metrics.headers",
+    "concurrency_metrics_body": "concurrency_metrics.body.txt"
+  },
+  "interpretation_limits": [
+    "This probe validates gateway behavior against the deterministic mock upstream.",
+    "It does not validate real backend inference semantics."
+  ]
+}

@@ -1,0 +1,2 @@
+NAME                    IMAGE                 COMMAND     SERVICE   CREATED          STATUS          PORTS
+deployments-gateway-1   deployments-gateway   "gateway"   gateway   12 seconds ago   Up 12 seconds   0.0.0.0:18080->8080/tcp, [::]:18080->8080/tcp

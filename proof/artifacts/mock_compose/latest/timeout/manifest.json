@@ -1,0 +1,26 @@
+{
+  "mode": "mock_compose:timeout",
+  "gateway_url": "http://127.0.0.1:18080",
+  "scenarios": [
+    "timeout"
+  ],
+  "runtime_config": {
+    "GATEWAY_REQUEST_TIMEOUT": "100ms"
+  },
+  "checks": {
+    "timeout_returns_gateway_timeout": true,
+    "timeout_metrics_include_edge_error": true
+  },
+  "artifacts": {
+    "timeout_slow_extract_status": "timeout_slow_extract.status",
+    "timeout_slow_extract_headers": "timeout_slow_extract.headers",
+    "timeout_slow_extract_body": "timeout_slow_extract.body.json",
+    "timeout_metrics_status": "timeout_metrics.status",
+    "timeout_metrics_headers": "timeout_metrics.headers",
+    "timeout_metrics_body": "timeout_metrics.body.txt"
+  },
+  "interpretation_limits": [
+    "This probe validates gateway behavior against the deterministic mock upstream.",
+    "It does not validate real backend inference semantics."
+  ]
+}

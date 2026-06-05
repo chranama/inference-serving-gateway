@@ -1,0 +1,12 @@
+otel-collector-1  | 2026-06-05T15:20:41.220Z	info	service@v0.122.1/service.go:193	Setting up own telemetry...
+otel-collector-1  | 2026-06-05T15:20:41.220Z	info	builders/builders.go:26	Development component. May change in the future.	{"otelcol.component.id": "debug", "otelcol.component.kind": "Exporter", "otelcol.signal": "traces"}
+otel-collector-1  | 2026-06-05T15:20:41.220Z	info	service@v0.122.1/service.go:260	Starting otelcol-contrib...	{"Version": "0.122.1", "NumCPU": 16}
+otel-collector-1  | 2026-06-05T15:20:41.220Z	info	extensions/extensions.go:40	Starting extensions...
+otel-collector-1  | 2026-06-05T15:20:41.220Z	info	extensions/extensions.go:44	Extension is starting...	{"otelcol.component.id": "health_check", "otelcol.component.kind": "Extension"}
+otel-collector-1  | 2026-06-05T15:20:41.220Z	info	healthcheckextension@v0.122.0/healthcheckextension.go:32	Starting health_check extension	{"otelcol.component.id": "health_check", "otelcol.component.kind": "Extension", "config": {"Endpoint":"0.0.0.0:13133","TLSSetting":null,"CORS":null,"Auth":null,"MaxRequestBodySize":0,"IncludeMetadata":false,"ResponseHeaders":null,"CompressionAlgorithms":null,"ReadTimeout":0,"ReadHeaderTimeout":0,"WriteTimeout":0,"IdleTimeout":0,"Path":"/","ResponseBody":null,"CheckCollectorPipeline":{"Enabled":false,"Interval":"5m","ExporterFailureThreshold":5}}}
+otel-collector-1  | 2026-06-05T15:20:41.220Z	info	extensions/extensions.go:61	Extension started.	{"otelcol.component.id": "health_check", "otelcol.component.kind": "Extension"}
+otel-collector-1  | 2026-06-05T15:20:41.221Z	info	otlpreceiver@v0.122.1/otlp.go:116	Starting GRPC server	{"otelcol.component.id": "otlp", "otelcol.component.kind": "Receiver", "endpoint": "0.0.0.0:4317"}
+otel-collector-1  | 2026-06-05T15:20:41.221Z	info	otlpreceiver@v0.122.1/otlp.go:173	Starting HTTP server	{"otelcol.component.id": "otlp", "otelcol.component.kind": "Receiver", "endpoint": "0.0.0.0:4318"}
+otel-collector-1  | 2026-06-05T15:20:41.221Z	info	healthcheck/handler.go:132	Health Check state change	{"otelcol.component.id": "health_check", "otelcol.component.kind": "Extension", "status": "ready"}
+otel-collector-1  | 2026-06-05T15:20:41.221Z	info	service@v0.122.1/service.go:283	Everything is ready. Begin running and processing data.
+otel-collector-1  | 2026-06-05T15:20:43.831Z	info	Traces	{"otelcol.component.id": "debug", "otelcol.component.kind": "Exporter", "otelcol.signal": "traces", "resource spans": 1, "spans": 8}

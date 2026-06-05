@@ -1,0 +1,43 @@
+Name:                   gateway
+Namespace:              inference-gateway-mock
+CreationTimestamp:      Thu, 04 Jun 2026 18:46:20 -0500
+Labels:                 app=gateway
+Annotations:            deployment.kubernetes.io/revision: 3
+Selector:               app=gateway
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=gateway
+  Containers:
+   gateway:
+    Image:      inference-serving-gateway:mock-kind
+    Port:       8080/TCP (http)
+    Host Port:  0/TCP (http)
+    Liveness:   http-get http://:http/healthz delay=1s timeout=1s period=5s #success=1 #failure=3
+    Readiness:  http-get http://:http/readyz delay=1s timeout=1s period=2s #success=1 #failure=3
+    Environment:
+      GATEWAY_LISTEN_ADDR:        :8080
+      GATEWAY_UPSTREAM_BASE_URL:  http://mock-upstream:18081
+      GATEWAY_REQUEST_TIMEOUT:    2s
+      GATEWAY_ENABLE_METRICS:     true
+      GATEWAY_CONCURRENCY_LIMIT:  1
+    Mounts:                       <none>
+  Volumes:                        <none>
+  Node-Selectors:                 <none>
+  Tolerations:                    <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  gateway-7f54c787df (0/0 replicas created)
+NewReplicaSet:   gateway-5cb87b896c (1/1 replicas created)
+Events:
+  Type    Reason             Age                 From                   Message
+  ----    ------             ----                ----                   -------
+  Normal  ScalingReplicaSet  2m21s               deployment-controller  Scaled up replica set gateway-7f54c787df from 0 to 1
+  Normal  ScalingReplicaSet  2m20s               deployment-controller  Scaled down replica set gateway-5cb87b896c from 1 to 0
+  Normal  ScalingReplicaSet  2s (x2 over 2m45s)  deployment-controller  Scaled up replica set gateway-5cb87b896c from 0 to 1
+  Normal  ScalingReplicaSet  0s                  deployment-controller  Scaled down replica set gateway-7f54c787df from 1 to 0

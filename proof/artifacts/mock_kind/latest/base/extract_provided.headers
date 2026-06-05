@@ -1,0 +1,7 @@
+Content-Type: application/json
+Date: Thu, 04 Jun 2026 23:49:06 GMT
+Server: InferenceGatewayMock/1.0 Python/3.13.13
+X-Request-Id: probe-request-1
+X-Trace-Id: probe-trace-1
+Content-Length: 190
+Connection: close

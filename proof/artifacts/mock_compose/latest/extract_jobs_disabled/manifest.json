@@ -1,0 +1,22 @@
+{
+  "mode": "mock_compose:extract_jobs_disabled",
+  "gateway_url": "http://127.0.0.1:18080",
+  "scenarios": [
+    "extract_jobs_disabled"
+  ],
+  "runtime_config": {
+    "GATEWAY_ALLOW_EXTRACT_JOBS": "false"
+  },
+  "checks": {
+    "extract_jobs_disabled_rejected": true
+  },
+  "artifacts": {
+    "extract_jobs_disabled_status": "extract_jobs_disabled.status",
+    "extract_jobs_disabled_headers": "extract_jobs_disabled.headers",
+    "extract_jobs_disabled_body": "extract_jobs_disabled.body.json"
+  },
+  "interpretation_limits": [
+    "This probe validates gateway behavior against the deterministic mock upstream.",
+    "It does not validate real backend inference semantics."
+  ]
+}

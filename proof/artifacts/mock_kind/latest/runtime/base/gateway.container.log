@@ -1,0 +1,6 @@
+Found 2 pods, using pod/gateway-5cb87b896c-zgxls
+{"time":"2026-06-04T23:49:04.149334546Z","level":"INFO","msg":"otel bootstrap disabled","service_name":"inference-serving-gateway"}
+{"time":"2026-06-04T23:49:04.152076588Z","level":"INFO","msg":"gateway starting","listen_addr":":8080","upstream_base_url":"http://mock-upstream:18081","otel_enabled":false,"otel_service_name":"inference-serving-gateway"}
+{"time":"2026-06-04T23:49:05.389367005Z","level":"INFO","msg":"gateway request","request_id":"78e1a51d-1874-4fe7-b9a2-c0dff97a6069","trace_id":"27abb877-4bb6-4a05-a877-6ce79ab7930a","route":"readyz","method":"GET","status_code":200,"latency_ms":23,"bytes_written":19,"upstream_host":"mock-upstream:18081"}
+{"time":"2026-06-04T23:49:05.705648297Z","level":"INFO","msg":"gateway request","request_id":"9c3a693f-1b91-434e-bdb3-9615cd488e81","trace_id":"57280a60-5bff-44b4-b5e1-bbac7caf88c5","route":"healthz","method":"GET","status_code":200,"latency_ms":0,"bytes_written":16,"upstream_host":"mock-upstream:18081"}
+{"time":"2026-06-04T23:49:05.726062005Z","level":"INFO","msg":"gateway request","request_id":"63ff9eb8-9f73-4a79-969a-b20bafd0934c","trace_id":"906ba8e6-56b5-4eb6-b9c2-74cd13dd2828","route":"readyz","method":"GET","status_code":200,"latency_ms":1,"bytes_written":19,"upstream_host":"mock-upstream:18081"}

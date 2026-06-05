@@ -4,14 +4,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+# shellcheck source=proof/preflight.sh
+source "${SCRIPT_DIR}/preflight.sh"
+
 ARTIFACT_DIR="${1:-${SCRIPT_DIR}/artifacts/mock_upstream/latest}"
 UPSTREAM_PORT="${UPSTREAM_PORT:-18081}"
 GATEWAY_PORT="${GATEWAY_PORT:-18080}"
 UPSTREAM_URL="http://127.0.0.1:${UPSTREAM_PORT}"
 GATEWAY_URL="http://127.0.0.1:${GATEWAY_PORT}"
-
-mkdir -p "${ARTIFACT_DIR}"
-rm -f "${ARTIFACT_DIR}"/*
 
 require_command() {
   local cmd="$1"
@@ -24,6 +24,11 @@ require_command() {
 require_command python3
 require_command curl
 require_command go
+
+require_ports_free "Mock upstream proof" "${UPSTREAM_PORT}" "${GATEWAY_PORT}"
+
+mkdir -p "${ARTIFACT_DIR}"
+rm -f "${ARTIFACT_DIR}"/*
 
 cleanup() {
   if [[ -n "${GATEWAY_PID:-}" ]]; then

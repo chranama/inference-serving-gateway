@@ -1,0 +1,9 @@
+.git
+.github
+.cache
+archive
+proof/artifacts
+proof/runtime
+**/__pycache__
+**/*.pyc
+.DS_Store

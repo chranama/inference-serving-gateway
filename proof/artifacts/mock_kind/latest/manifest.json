@@ -1,0 +1,53 @@
+{
+  "mode": "mock_kind",
+  "gateway_url": "http://127.0.0.1:18085",
+  "cluster": "inference-gateway",
+  "namespace": "inference-gateway-mock",
+  "kustomization": "deploy/k8s/mock-kind",
+  "phase_manifests": {
+    "base": "base/manifest.json",
+    "timeout": "timeout/manifest.json"
+  },
+  "checks": {
+    "base.healthz_ok": true,
+    "base.readyz_ready": true,
+    "base.metrics_available": true,
+    "base.metrics_include_gateway_requests_total": true,
+    "base.metrics_include_gateway_upstream_requests_total": true,
+    "base.generated_identity_response_body": true,
+    "base.generated_identity_response_headers": true,
+    "base.provided_extract_identity_preserved": true,
+    "base.async_submit_identity_preserved": true,
+    "base.async_status_identity_preserved": true,
+    "base.concurrency_first_request_completed": true,
+    "base.concurrency_second_request_rejected": true,
+    "base.concurrency_metrics_include_edge_error": true,
+    "timeout.timeout_returns_gateway_timeout": true,
+    "timeout.timeout_metrics_include_edge_error": true
+  },
+  "artifacts": {
+    "port_forward_gateway_log": "port-forward-gateway.log",
+    "base_manifest": "base/manifest.json",
+    "base_summary": "base/summary.md",
+    "timeout_manifest": "timeout/manifest.json",
+    "timeout_summary": "timeout/summary.md",
+    "runtime_base_deployments_txt": "runtime/base/deployments.txt",
+    "runtime_base_gateway_container_log": "runtime/base/gateway.container.log",
+    "runtime_base_gateway_deployment_describe_txt": "runtime/base/gateway.deployment.describe.txt",
+    "runtime_base_mock-upstream_container_log": "runtime/base/mock-upstream.container.log",
+    "runtime_base_mock-upstream_deployment_describe_txt": "runtime/base/mock-upstream.deployment.describe.txt",
+    "runtime_base_pods_txt": "runtime/base/pods.txt",
+    "runtime_base_services_txt": "runtime/base/services.txt",
+    "runtime_timeout_deployments_txt": "runtime/timeout/deployments.txt",
+    "runtime_timeout_gateway_container_log": "runtime/timeout/gateway.container.log",
+    "runtime_timeout_gateway_deployment_describe_txt": "runtime/timeout/gateway.deployment.describe.txt",
+    "runtime_timeout_mock-upstream_container_log": "runtime/timeout/mock-upstream.container.log",
+    "runtime_timeout_mock-upstream_deployment_describe_txt": "runtime/timeout/mock-upstream.deployment.describe.txt",
+    "runtime_timeout_pods_txt": "runtime/timeout/pods.txt",
+    "runtime_timeout_services_txt": "runtime/timeout/services.txt"
+  },
+  "interpretation_limits": [
+    "This manifest validates the isolated kind deployment with gateway and mock upstream pods.",
+    "It does not validate the companion backend, cloud Kubernetes, or production autoscaling."
+  ]
+}

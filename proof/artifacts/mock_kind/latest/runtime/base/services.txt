@@ -1,0 +1,3 @@
+NAME            TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)     AGE     SELECTOR
+gateway         ClusterIP   10.96.93.23   <none>        8080/TCP    2m45s   app=gateway
+mock-upstream   ClusterIP   10.96.213.2   <none>        18081/TCP   2m45s   app=mock-upstream

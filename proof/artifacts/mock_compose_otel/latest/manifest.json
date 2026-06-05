@@ -1,0 +1,65 @@
+{
+  "mode": "mock_compose_otel",
+  "gateway_url": "http://127.0.0.1:18086",
+  "jaeger_url": "http://127.0.0.1:16687",
+  "collector_health_url": "http://127.0.0.1:13134",
+  "compose_file": "deployments/docker-compose.mock.otel.yml",
+  "runtime_config": {
+    "GATEWAY_OTEL_ENABLED": "true",
+    "GATEWAY_OTEL_SERVICE_NAME": "inference-serving-gateway",
+    "GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318/v1/traces",
+    "GATEWAY_UPSTREAM_BASE_URL": "http://mock-upstream:18081"
+  },
+  "checks": {
+    "healthz_ok": true,
+    "readyz_ready": true,
+    "collector_health_ok": true,
+    "extract_ok": true,
+    "request_id_preserved": true,
+    "trace_id_preserved": true,
+    "traceparent_reached_mock_upstream": true,
+    "gateway_log_shows_otel_enabled": true,
+    "collector_received_trace_data": true,
+    "jaeger_gateway_service_registered": true,
+    "jaeger_trace_found": true,
+    "jaeger_trace_has_gateway_service": true,
+    "jaeger_trace_contains_gateway_server_span": true,
+    "jaeger_trace_contains_upstream_client_span": true,
+    "jaeger_trace_has_request_id_attribute": true,
+    "jaeger_trace_has_trace_id_attribute": true
+  },
+  "artifacts": {
+    "healthz_body": "healthz.body.json",
+    "readyz_body": "readyz.body.json",
+    "collector_healthz_body": "collector_healthz.body.json",
+    "extract_headers": "extract.headers",
+    "extract_body": "extract.body.json",
+    "jaeger_services": "jaeger-services.json",
+    "extract_otel_trace": "extract_otel_trace.json",
+    "compose_ps": "runtime/compose.ps.txt",
+    "compose_images": "runtime/compose.images.txt",
+    "gateway_container_log": "runtime/gateway.container.log",
+    "mock_upstream_container_log": "runtime/mock-upstream.container.log",
+    "otel_collector_container_log": "runtime/otel-collector.container.log",
+    "jaeger_container_log": "runtime/jaeger.container.log"
+  },
+  "expected_identity": {
+    "request_id": "otel-proof-request-1",
+    "trace_id": "otel-proof-trace-1"
+  },
+  "expected_spans": [
+    "gateway.extract",
+    "upstream.extract"
+  ],
+  "observed_span_names": [
+    "gateway.extract",
+    "upstream.extract"
+  ],
+  "observed_services": [
+    "inference-serving-gateway"
+  ],
+  "interpretation_limits": [
+    "This proof validates isolated gateway OTLP/HTTP export and trace-context injection with a mock upstream.",
+    "It does not validate backend inference semantics, worker traces, or Kubernetes observability wiring."
+  ]
+}

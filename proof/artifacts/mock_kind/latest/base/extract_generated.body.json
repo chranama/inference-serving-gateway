@@ -1,0 +1,1 @@
+{"path": "/v1/extract", "method": "POST", "body": "{\"schema_id\":\"demo_schema_v1\",\"text\":\"Vendor: ACME\\nTotal: 10.00\"}", "request_id": "8418fec2-8216-4dec-8632-69b815991a65", "trace_id": "4ca5c677-2390-435b-b403-c9d4c068f3e5"}

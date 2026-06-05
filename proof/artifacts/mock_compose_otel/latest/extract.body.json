@@ -1,0 +1,1 @@
+{"path": "/v1/extract", "method": "POST", "body": "{\"schema_id\":\"demo_schema_v1\",\"text\":\"Vendor: ACME\\nTotal: 10.00\"}", "request_id": "otel-proof-request-1", "trace_id": "otel-proof-trace-1", "traceparent": "00-9d7241f95524731fa90a7b6476261985-1415be1874a58ac3-01"}

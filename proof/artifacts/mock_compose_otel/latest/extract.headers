@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+Content-Type: application/json
+Date: Fri, 05 Jun 2026 15:20:41 GMT
+Server: InferenceGatewayMock/1.0 Python/3.13.13
+X-Request-Id: otel-proof-request-1
+X-Trace-Id: otel-proof-trace-1
+Content-Length: 274
+
