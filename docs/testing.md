@@ -44,14 +44,15 @@ running external backend.
 ## What Tests Do Not Cover
 
 The default `go test ./...` suite does not run the live
-`llm-extraction-platform` integration stack, Docker Compose proof path, isolated
-`kind` proof path, integrated `kind` stack, or AWS deployment paths. Those are
-covered by separate scripts under `proof/` and deployment-specific assets.
+`llm-extraction-platform` integration stack, Docker Compose artifact workflow,
+isolated `kind` artifact workflow, integrated `kind` stack, or AWS deployment
+paths. Those are covered by separate scripts under `proof/` and
+deployment-specific assets.
 
 ## Proof Workflows
 
-Use the proof workflows when the question is not only "does the code pass unit
-tests?" but "what runtime behavior can a reviewer inspect?"
+Use the artifact workflows when the question is not only "does the code pass
+unit tests?" but "what runtime behavior is captured?"
 
 Host process proof:
 

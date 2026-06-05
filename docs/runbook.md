@@ -11,7 +11,7 @@ This guide covers local startup, verification, observation, and shutdown.
 
 ## Make Targets
 
-Use these targets for the reviewer-facing isolated workflows:
+Use these targets for the isolated local workflows:
 
 ```bash
 make test

@@ -23,7 +23,7 @@ Usage:
   proof/run_mock_kind_stack.sh proof
   proof/run_mock_kind_stack.sh down
 
-This is the gateway-isolated Kubernetes proof path. It runs only the gateway
+This is the gateway-isolated Kubernetes artifact workflow. It runs only the gateway
 and deterministic mock upstream in a local kind cluster.
 EOF
 }

@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "deploy/aws/**"
+      - "deploy/k8s/aws-eks/**"
+      - ".github/workflows/aws-image-publish.yml"
+  pull_request:
+    paths-ignore:
+      - "deploy/aws/**"
+      - "deploy/k8s/aws-eks/**"
+      - ".github/workflows/aws-image-publish.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: Go Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run tests
+        run: make test
+
+      - name: Build gateway
+        run: make build
+
+  static-runtime-checks:
+    name: Static Runtime Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check proof script syntax
+        run: bash -n proof/*.sh
+
+      - name: Show Docker Compose version
+        run: docker compose version
+
+      - name: Render mock Compose config
+        run: docker compose -f deployments/docker-compose.mock.yml config
+
+      - name: Render isolated OTel Compose config
+        run: docker compose -f deployments/docker-compose.mock.otel.yml config

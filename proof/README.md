@@ -11,7 +11,7 @@ This directory contains proof helpers for the gateway in several modes:
 
 ## Mock Upstream Proof
 
-This is the canonical proof path for `inference-serving-gateway v1`.
+This is the default artifact workflow for `inference-serving-gateway v1`.
 
 Command:
 
@@ -136,7 +136,7 @@ What this path proves:
 
 - the gateway runs as an isolated Kubernetes deployment
 - the gateway reaches the mock upstream through cluster DNS
-- the Kubernetes-shaped proof path does not require `llm-extraction-platform`
+- the Kubernetes-shaped artifact workflow does not require `llm-extraction-platform`
 
 ## `llm-extraction-platform` Integration Probe
 

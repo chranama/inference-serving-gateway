@@ -215,7 +215,7 @@ manifest = {
     "artifacts": artifacts,
     "interpretation_limits": [
         "This manifest validates the Docker Compose mock deployment and gateway-owned edge behavior.",
-        "It does not validate a real inference backend or production-grade Docker operations.",
+        "It does not validate a real inference backend or production operations.",
     ],
 }
 (artifact_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
