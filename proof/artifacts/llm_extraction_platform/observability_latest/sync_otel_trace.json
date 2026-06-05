@@ -1,0 +1,385 @@
+{
+  "query_name": "sync",
+  "service": "inference-serving-gateway",
+  "tags": {
+    "llm.trace_id": "integration-obs-trace-1"
+  },
+  "trace_count": 1,
+  "selected_trace_id": "d3b91d2ba7364bdcf63943067e551635",
+  "selected_trace_services": [
+    "inference-serving-gateway",
+    "llm-extraction-platform"
+  ],
+  "required_services": [
+    "inference-serving-gateway",
+    "llm-extraction-platform"
+  ],
+  "data": {
+    "traceID": "d3b91d2ba7364bdcf63943067e551635",
+    "spans": [
+      {
+        "traceID": "d3b91d2ba7364bdcf63943067e551635",
+        "spanID": "48b57c5dde4f002f",
+        "operationName": "backend.extract",
+        "references": [
+          {
+            "refType": "CHILD_OF",
+            "traceID": "d3b91d2ba7364bdcf63943067e551635",
+            "spanID": "2f0ca53cad9019a1"
+          }
+        ],
+        "startTime": 1775321302313577,
+        "duration": 198209,
+        "tags": [
+          {
+            "key": "http.request.method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "key": "http.response.status_code",
+            "type": "int64",
+            "value": 200
+          },
+          {
+            "key": "internal.span.format",
+            "type": "string",
+            "value": "otlp"
+          },
+          {
+            "key": "llm.component",
+            "type": "string",
+            "value": "backend"
+          },
+          {
+            "key": "llm.request_id",
+            "type": "string",
+            "value": "integration-obs-request-1"
+          },
+          {
+            "key": "llm.route",
+            "type": "string",
+            "value": "/v1/extract"
+          },
+          {
+            "key": "llm.schema_id",
+            "type": "string",
+            "value": "sroie_receipt_v1"
+          },
+          {
+            "key": "llm.trace_id",
+            "type": "string",
+            "value": "integration-obs-trace-1"
+          },
+          {
+            "key": "otel.scope.name",
+            "type": "string",
+            "value": "llm-extraction-platform/http.server"
+          },
+          {
+            "key": "otel.status_code",
+            "type": "string",
+            "value": "OK"
+          },
+          {
+            "key": "span.kind",
+            "type": "string",
+            "value": "server"
+          },
+          {
+            "key": "url.path",
+            "type": "string",
+            "value": "/v1/extract"
+          }
+        ],
+        "logs": [],
+        "processID": "p1",
+        "warnings": null
+      },
+      {
+        "traceID": "d3b91d2ba7364bdcf63943067e551635",
+        "spanID": "70837b1094cbc6c9",
+        "operationName": "extract.execute",
+        "references": [
+          {
+            "refType": "CHILD_OF",
+            "traceID": "d3b91d2ba7364bdcf63943067e551635",
+            "spanID": "48b57c5dde4f002f"
+          }
+        ],
+        "startTime": 1775321302357714,
+        "duration": 153409,
+        "tags": [
+          {
+            "key": "http.request.method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "key": "internal.span.format",
+            "type": "string",
+            "value": "otlp"
+          },
+          {
+            "key": "llm.component",
+            "type": "string",
+            "value": "backend"
+          },
+          {
+            "key": "llm.request_id",
+            "type": "string",
+            "value": "integration-obs-request-1"
+          },
+          {
+            "key": "llm.route",
+            "type": "string",
+            "value": "/v1/extract"
+          },
+          {
+            "key": "llm.schema_id",
+            "type": "string",
+            "value": "sroie_receipt_v1"
+          },
+          {
+            "key": "llm.trace_id",
+            "type": "string",
+            "value": "integration-obs-trace-1"
+          },
+          {
+            "key": "otel.scope.name",
+            "type": "string",
+            "value": "llm-extraction-platform/application"
+          },
+          {
+            "key": "span.kind",
+            "type": "string",
+            "value": "internal"
+          },
+          {
+            "key": "url.path",
+            "type": "string",
+            "value": "/v1/extract"
+          }
+        ],
+        "logs": [],
+        "processID": "p1",
+        "warnings": null
+      },
+      {
+        "traceID": "d3b91d2ba7364bdcf63943067e551635",
+        "spanID": "b4e9b4b70f3e3bcb",
+        "operationName": "gateway.extract",
+        "references": [],
+        "startTime": 1775321302312957,
+        "duration": 199164,
+        "tags": [
+          {
+            "key": "http.request.method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "key": "http.response.body.size",
+            "type": "int64",
+            "value": 157
+          },
+          {
+            "key": "http.response.status_code",
+            "type": "int64",
+            "value": 200
+          },
+          {
+            "key": "internal.span.format",
+            "type": "string",
+            "value": "otlp"
+          },
+          {
+            "key": "llm.component",
+            "type": "string",
+            "value": "gateway"
+          },
+          {
+            "key": "llm.request_id",
+            "type": "string",
+            "value": "integration-obs-request-1"
+          },
+          {
+            "key": "llm.route",
+            "type": "string",
+            "value": "extract"
+          },
+          {
+            "key": "llm.trace_id",
+            "type": "string",
+            "value": "integration-obs-trace-1"
+          },
+          {
+            "key": "otel.scope.name",
+            "type": "string",
+            "value": "inference-serving-gateway/http.server"
+          },
+          {
+            "key": "otel.status_code",
+            "type": "string",
+            "value": "OK"
+          },
+          {
+            "key": "server.address",
+            "type": "string",
+            "value": "127.0.0.1:18085"
+          },
+          {
+            "key": "span.kind",
+            "type": "string",
+            "value": "server"
+          },
+          {
+            "key": "url.path",
+            "type": "string",
+            "value": "/v1/extract"
+          }
+        ],
+        "logs": [],
+        "processID": "p2",
+        "warnings": null
+      },
+      {
+        "traceID": "d3b91d2ba7364bdcf63943067e551635",
+        "spanID": "2f0ca53cad9019a1",
+        "operationName": "upstream.extract",
+        "references": [
+          {
+            "refType": "CHILD_OF",
+            "traceID": "d3b91d2ba7364bdcf63943067e551635",
+            "spanID": "b4e9b4b70f3e3bcb"
+          }
+        ],
+        "startTime": 1775321302313040,
+        "duration": 199041,
+        "tags": [
+          {
+            "key": "http.request.method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "key": "http.response.body.size",
+            "type": "int64",
+            "value": 157
+          },
+          {
+            "key": "http.response.status_code",
+            "type": "int64",
+            "value": 200
+          },
+          {
+            "key": "internal.span.format",
+            "type": "string",
+            "value": "otlp"
+          },
+          {
+            "key": "llm.component",
+            "type": "string",
+            "value": "gateway"
+          },
+          {
+            "key": "llm.request_id",
+            "type": "string",
+            "value": "integration-obs-request-1"
+          },
+          {
+            "key": "llm.route",
+            "type": "string",
+            "value": "extract"
+          },
+          {
+            "key": "llm.trace_id",
+            "type": "string",
+            "value": "integration-obs-trace-1"
+          },
+          {
+            "key": "otel.scope.name",
+            "type": "string",
+            "value": "inference-serving-gateway/http.client"
+          },
+          {
+            "key": "otel.status_code",
+            "type": "string",
+            "value": "OK"
+          },
+          {
+            "key": "server.address",
+            "type": "string",
+            "value": "127.0.0.1:8000"
+          },
+          {
+            "key": "span.kind",
+            "type": "string",
+            "value": "client"
+          },
+          {
+            "key": "url.path",
+            "type": "string",
+            "value": "/v1/extract"
+          }
+        ],
+        "logs": [],
+        "processID": "p2",
+        "warnings": null
+      }
+    ],
+    "processes": {
+      "p1": {
+        "serviceName": "llm-extraction-platform",
+        "tags": [
+          {
+            "key": "llm.component",
+            "type": "string",
+            "value": "backend"
+          },
+          {
+            "key": "telemetry.sdk.language",
+            "type": "string",
+            "value": "python"
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "type": "string",
+            "value": "opentelemetry"
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "type": "string",
+            "value": "1.40.0"
+          }
+        ]
+      },
+      "p2": {
+        "serviceName": "inference-serving-gateway",
+        "tags": [
+          {
+            "key": "llm.component",
+            "type": "string",
+            "value": "gateway"
+          },
+          {
+            "key": "telemetry.sdk.language",
+            "type": "string",
+            "value": "go"
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "type": "string",
+            "value": "opentelemetry"
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "type": "string",
+            "value": "1.38.0"
+          }
+        ]
+      }
+    },
+    "warnings": null
+  }
+}

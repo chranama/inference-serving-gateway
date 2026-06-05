@@ -12,6 +12,7 @@ LOG_DIR="${RUNTIME_DIR}/logs"
 PID_DIR="${RUNTIME_DIR}/pids"
 STATE_DIR="${RUNTIME_DIR}/state"
 ENV_FILE="${RUNTIME_DIR}/local-stack.env"
+GATEWAY_BIN="${STATE_DIR}/gateway-local"
 
 BACKEND_LOG="${LOG_DIR}/backend.log"
 WORKER_LOG="${LOG_DIR}/worker.log"
@@ -23,9 +24,6 @@ GATEWAY_PID_FILE="${PID_DIR}/gateway.pid"
 
 DEFAULT_DATABASE_URL="postgresql+asyncpg://llm:llm@127.0.0.1:5433/llm"
 DEFAULT_REDIS_URL="redis://127.0.0.1:6379/0"
-DEFAULT_BACKEND_URL="http://127.0.0.1:8000"
-DEFAULT_GATEWAY_URL="http://127.0.0.1:18082"
-
 : "${PHASE2_APP_ROOT:=${BACKEND_REPO_ROOT}}"
 : "${PHASE2_APP_PROFILE:=test}"
 : "${PHASE2_MODELS_PROFILE:=observability-proof}"
@@ -153,6 +151,30 @@ need_file() {
     echo "Missing required file: ${path}" >&2
     exit 1
   fi
+}
+
+resolve_loopback_host() {
+  local host="$1"
+  case "${host}" in
+    0.0.0.0|"::")
+      printf '127.0.0.1\n'
+      ;;
+    *)
+      printf '%s\n' "${host}"
+      ;;
+  esac
+}
+
+backend_url() {
+  local host
+  host="$(resolve_loopback_host "${PHASE2_BACKEND_HOST}")"
+  printf 'http://%s:%s\n' "${host}" "${PHASE2_BACKEND_PORT}"
+}
+
+gateway_url() {
+  local host
+  host="$(resolve_loopback_host "${PHASE2_GATEWAY_HOST}")"
+  printf 'http://%s:%s\n' "${host}" "${PHASE2_GATEWAY_PORT}"
 }
 
 ensure_layout() {
@@ -345,13 +367,14 @@ start_gateway_process() {
   : >"${GATEWAY_LOG}"
   (
     cd "${GATEWAY_REPO_ROOT}"
+    go build -o "${GATEWAY_BIN}" ./cmd/gateway
     nohup env \
       GATEWAY_LISTEN_ADDR="${PHASE2_GATEWAY_HOST}:${PHASE2_GATEWAY_PORT}" \
-      GATEWAY_UPSTREAM_BASE_URL="${DEFAULT_BACKEND_URL}" \
+      GATEWAY_UPSTREAM_BASE_URL="$(backend_url)" \
       GATEWAY_OTEL_ENABLED="${PHASE2_WITH_OTEL}" \
       GATEWAY_OTEL_SERVICE_NAME="${PHASE2_GATEWAY_OTEL_SERVICE_NAME}" \
       GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT="${PHASE2_OTEL_EXPORTER_OTLP_ENDPOINT}" \
-      go run ./cmd/gateway \
+      "${GATEWAY_BIN}" \
       >"${GATEWAY_LOG}" 2>&1 &
     echo $! >"${GATEWAY_PID_FILE}"
   )
@@ -471,11 +494,11 @@ cmd_up() {
   start_backend_process
   start_worker_process
   start_gateway_process
-  wait_for_url "${DEFAULT_BACKEND_URL}/healthz"
-  wait_for_url "${DEFAULT_GATEWAY_URL}/healthz"
+  wait_for_url "$(backend_url)/healthz"
+  wait_for_url "$(gateway_url)/healthz"
   echo "Phase 2 local stack is up."
-  echo "Backend: ${DEFAULT_BACKEND_URL}"
-  echo "Gateway: ${DEFAULT_GATEWAY_URL}"
+  echo "Backend: $(backend_url)"
+  echo "Gateway: $(gateway_url)"
   echo "Prometheus: http://127.0.0.1:${PHASE2_PROM_HOST_PORT} (if PHASE2_WITH_OBS=1)"
   echo "Grafana: http://127.0.0.1:${PHASE2_GRAFANA_PORT} (if PHASE2_WITH_OBS=1)"
   echo "OTel Collector: http://127.0.0.1:${PHASE2_OTEL_COLLECTOR_PORT}/v1/traces (if PHASE2_WITH_OTEL=1)"
@@ -499,9 +522,9 @@ cmd_restart() {
 }
 
 cmd_status() {
-  show_status_line "backend" "${BACKEND_PID_FILE}" "${DEFAULT_BACKEND_URL}/healthz"
+  show_status_line "backend" "${BACKEND_PID_FILE}" "$(backend_url)/healthz"
   show_status_line "worker" "${WORKER_PID_FILE}"
-  show_status_line "gateway" "${GATEWAY_PID_FILE}" "${DEFAULT_GATEWAY_URL}/healthz"
+  show_status_line "gateway" "${GATEWAY_PID_FILE}" "$(gateway_url)/healthz"
   if command -v docker >/dev/null 2>&1; then
     if docker info >/dev/null 2>&1 && docker compose -f "${COMPOSE_FILE}" ps >/dev/null 2>&1; then
       echo "infra:"
@@ -529,13 +552,13 @@ cmd_proof() {
     echo "Local stack is not fully running. Run: proof/run_local_stack.sh up" >&2
     exit 1
   fi
-  wait_for_url "${DEFAULT_BACKEND_URL}/healthz"
-  wait_for_url "${DEFAULT_GATEWAY_URL}/healthz"
+  wait_for_url "$(backend_url)/healthz"
+  wait_for_url "$(gateway_url)/healthz"
   env \
-    LLM_EXTRACTION_PLATFORM_BASE_URL="${DEFAULT_BACKEND_URL}" \
+    LLM_EXTRACTION_PLATFORM_BASE_URL="$(backend_url)" \
     LLM_EXTRACTION_PLATFORM_API_KEY="${PHASE2_PROOF_USER_KEY}" \
     LLM_EXTRACTION_PLATFORM_ADMIN_API_KEY="${PHASE2_PROOF_ADMIN_KEY}" \
-    GATEWAY_BASE_URL="${DEFAULT_GATEWAY_URL}" \
+    GATEWAY_BASE_URL="$(gateway_url)" \
     GATEWAY_LOG_PATH="${GATEWAY_LOG}" \
     JAEGER_BASE_URL="http://127.0.0.1:${PHASE2_JAEGER_PORT}" \
     OTEL_GATEWAY_SERVICE_NAME="${PHASE2_GATEWAY_OTEL_SERVICE_NAME}" \

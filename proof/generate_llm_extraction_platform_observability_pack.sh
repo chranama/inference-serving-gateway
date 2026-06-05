@@ -94,6 +94,17 @@ wait_for_url() {
   return 1
 }
 
+normalize_headers_file() {
+  local path="$1"
+  python3 - <<'PY' "${path}"
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+path.write_text(path.read_text().replace("\r\n", "\n"))
+PY
+}
+
 wait_for_url "${BACKEND_URL}/healthz"
 wait_for_url "${GATEWAY_URL}/healthz"
 
@@ -120,6 +131,7 @@ curl -fsS \
   -H "X-Trace-ID: ${SYNC_TRACE_ID}" \
   -d "${EXTRACT_PAYLOAD}" \
   "${GATEWAY_URL}/v1/extract" >"${ARTIFACT_DIR}/extract.body.json"
+normalize_headers_file "${ARTIFACT_DIR}/extract.headers"
 
 SYNC_BACKEND_TRACE_ID="$(
   python3 - <<'PY' "${ARTIFACT_DIR}/extract.headers"
@@ -152,6 +164,7 @@ curl -fsS \
   -H "X-Trace-ID: ${ASYNC_TRACE_ID}" \
   -d "${EXTRACT_PAYLOAD}" \
   "${GATEWAY_URL}/v1/extract/jobs" >"${ARTIFACT_DIR}/extract_jobs.body.json"
+normalize_headers_file "${ARTIFACT_DIR}/extract_jobs.headers"
 
 JOB_ID="$(
   python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["job_id"])' \
@@ -185,6 +198,7 @@ for _ in $(seq 1 "${POLL_ATTEMPTS}"); do
 
   mv "${TMP_STATUS_HEADERS}" "${ARTIFACT_DIR}/job_status.headers"
   mv "${TMP_STATUS_BODY}" "${ARTIFACT_DIR}/job_status.body.json"
+  normalize_headers_file "${ARTIFACT_DIR}/job_status.headers"
 
   FINAL_STATUS="$(
     python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status",""))' \
@@ -261,6 +275,8 @@ if [[ -n "${JAEGER_BASE_URL}" ]]; then
   OTEL_GATEWAY_SERVICE_NAME_ENV="${OTEL_GATEWAY_SERVICE_NAME}" \
   OTEL_BACKEND_SERVICE_NAME_ENV="${OTEL_BACKEND_SERVICE_NAME}" \
   OTEL_WORKER_SERVICE_NAME_ENV="${OTEL_WORKER_SERVICE_NAME}" \
+  SYNC_TRACE_REQUIRED_SERVICES_ENV="${OTEL_GATEWAY_SERVICE_NAME},${OTEL_BACKEND_SERVICE_NAME}" \
+  ASYNC_TRACE_REQUIRED_SERVICES_ENV="${OTEL_GATEWAY_SERVICE_NAME},${OTEL_BACKEND_SERVICE_NAME},${OTEL_WORKER_SERVICE_NAME}" \
   SYNC_TRACE_ID_ENV="${SYNC_TRACE_ID}" \
   ASYNC_TRACE_ID_ENV="${ASYNC_TRACE_ID}" \
   ASYNC_JOB_ID_ENV="${JOB_ID}" \
@@ -281,6 +297,19 @@ proof_started_at_us = int(os.environ["PROOF_STARTED_AT_US_ENV"])
 def fetch_trace(query_name: str, service: str, tags: dict[str, str], output_name: str) -> None:
     last_payload = None
     query_start_us = max(proof_started_at_us - 5_000_000, 0)
+    required_services = {
+        name.strip()
+        for name in os.environ.get(f"{query_name.upper()}_TRACE_REQUIRED_SERVICES_ENV", "").split(",")
+        if name.strip()
+    }
+
+    def trace_services(trace_payload: dict) -> set[str]:
+        processes = trace_payload.get("processes", {})
+        return {
+            process.get("serviceName")
+            for process in processes.values()
+            if process.get("serviceName")
+        }
 
     for _ in range(80):
         params = urllib.parse.urlencode(
@@ -297,17 +326,44 @@ def fetch_trace(query_name: str, service: str, tags: dict[str, str], output_name
             payload = json.load(response)
         traces = payload.get("data", [])
         if traces:
-            selected = traces[0]
+            selected = None
+            selected_services: set[str] = set()
+            for candidate in traces:
+                candidate_services = trace_services(candidate)
+                if required_services.issubset(candidate_services):
+                    selected = candidate
+                    selected_services = candidate_services
+                    break
+            if selected is None and not required_services:
+                selected = traces[0]
+                selected_services = trace_services(selected)
+            if selected is not None:
+                output = {
+                    "query_name": query_name,
+                    "service": service,
+                    "tags": tags,
+                    "trace_count": len(traces),
+                    "selected_trace_id": selected.get("traceID"),
+                    "selected_trace_services": sorted(selected_services),
+                    "required_services": sorted(required_services),
+                    "data": selected,
+                }
+                (artifact_dir / output_name).write_text(json.dumps(output, indent=2) + "\n")
+                return
             output = {
                 "query_name": query_name,
                 "service": service,
                 "tags": tags,
+                "error": "matching_trace_not_found_yet",
                 "trace_count": len(traces),
-                "selected_trace_id": selected.get("traceID"),
-                "data": selected,
+                "required_services": sorted(required_services),
+                "candidate_services": [
+                    sorted(trace_services(candidate)) for candidate in traces
+                ],
             }
-            (artifact_dir / output_name).write_text(json.dumps(output, indent=2) + "\n")
-            return
+            last_payload = output
+            time.sleep(0.5)
+            continue
         last_payload = payload
         time.sleep(0.5)
 
