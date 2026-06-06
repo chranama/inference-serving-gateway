@@ -39,16 +39,30 @@ The backend must trust gateway-provided identity headers when running behind the
 gateway. In the local integration harness this is represented by backend
 `EDGE_MODE=behind_gateway`.
 
-## Running The Integration
+## Canonical Joint Workflow
 
-The runbook contains the runnable sequences for the live-backend probe, local
-stack harness, Kubernetes-shaped local stack, artifact generation, and shutdown:
+The canonical LLMEP plus gateway workflow is owned by the backend repository:
+
+- [LLMEP: Inference Gateway Integration](https://github.com/chranama/llm-extraction-platform/blob/main/docs/inference-gateway-integration.md)
+
+That workflow starts LLMEP, the async worker, local infrastructure, optional
+observability services, and this gateway as one stack. It also writes the joint
+proof artifact bundle from the backend side.
+
+## Gateway-Side Helpers
+
+The gateway runbook keeps helper paths for isolated gateway review and for
+probing an already running backend:
 
 - [Runbook: Backend Integration](runbook.md#backend-integration-stack)
 
+Use those helpers when reviewing gateway behavior in isolation or when LLMEP is
+already running. Use the LLMEP canonical workflow when presenting the combined
+system.
+
 ## Inspectable Outputs
 
-The backend integration scripts write artifacts under:
+The gateway-side backend integration scripts write artifacts under:
 
 - `proof/artifacts/llm_extraction_platform/observability_latest/`
 - `proof/artifacts/kind_stack/observability_latest/`

@@ -169,6 +169,15 @@ left intact so repeated runs do not recreate it.
 Use these paths only when the companion `llm-extraction-platform` checkout and
 local infrastructure requirements are available.
 
+For the canonical combined LLMEP plus gateway workflow, use the backend-owned
+runbook:
+
+- [LLMEP: Inference Gateway Integration](https://github.com/chranama/llm-extraction-platform/blob/main/docs/inference-gateway-integration.md)
+
+The commands below remain useful as gateway-side helpers when the backend is
+already running or when you need to inspect this repository's local stack
+scripts directly.
+
 Run the basic live-backend integration probe against an already running backend:
 
 ```bash
