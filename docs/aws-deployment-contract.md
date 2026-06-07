@@ -78,6 +78,41 @@ legible.
 Use the ALB DNS name first. A custom domain is explicitly out of scope for the
 first slice.
 
+## AWS Component Inventory
+
+The first deployment slice uses this AWS component set:
+
+| Component | What It Does | First-Slice Posture |
+|---|---|---|
+| VPC | Provides the isolated AWS network where the cluster, ingress, and managed data services live | Terraform-owned, single `dev` VPC |
+| Public subnets | Host internet-reachable resources such as ALB, and bounded node placement for the no-NAT first slice | Tagged for Kubernetes external load balancers |
+| Private subnets | Provide non-public subnet groups for managed data services | Used for RDS and ElastiCache |
+| Internet Gateway and route tables | Connect public subnets to the internet and define subnet routing behavior | Terraform-owned |
+| NAT Gateway | Would let private subnet workloads reach the internet without public addresses | Disabled by default |
+| Security groups | Act as AWS firewall rules for ingress, egress, and managed data access | Terraform-owned, scoped to the bounded VPC |
+| ECR | Stores CI-built container images that EKS pulls at deployment time | `inference-serving-gateway` and `llm-server` repositories |
+| IAM | Defines AWS permissions for EKS, worker nodes, and GitHub Actions image publication | Terraform-owned, OIDC-based publish path |
+| EKS | Runs the Kubernetes control plane for the joint runtime | One `dev` cluster |
+| EC2 managed node group | Supplies the worker-node compute where Kubernetes pods run | One bounded node group |
+| Application Load Balancer | Receives public HTTP traffic and forwards it to the gateway service | ALB DNS name first, no custom domain required |
+| AWS Load Balancer Controller | Watches Kubernetes ingress resources and creates/manages AWS load balancers | Required before ALB ingress is deployable |
+| RDS PostgreSQL | Provides the managed relational database used by the backend | Managed replacement for in-cluster Postgres |
+| ElastiCache Redis | Provides managed Redis for async queue/state support | Managed replacement for in-cluster Redis |
+| Secrets Manager | Stores long-lived runtime secrets outside source control and manifests | Small bounded secret set |
+| CloudWatch Logs | Collects cloud-side logs for gateway, backend, and worker inspection | Required cloud log surface |
+
+In-cluster OTel Collector, Jaeger, Prometheus, and Grafana are part of the AWS
+runtime proof, but they are not AWS managed services in the first slice.
+
+Explicitly excluded from the first slice unless added later by contract:
+
+- Route 53;
+- ACM-managed custom-domain TLS;
+- WAF;
+- multi-AZ HA posture;
+- AWS billing or chargeback services;
+- always-on NAT Gateway.
+
 ## Repository Ownership
 
 This repository owns the integrated AWS front door:
