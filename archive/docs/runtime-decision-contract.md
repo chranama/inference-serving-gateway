@@ -229,5 +229,5 @@ Alerts and SLOs exist to:
 
 - [Integrated Metrics Map](integrated-metrics-map.md)
 - [Trace Identity Contract](trace-identity-contract.md)
-- [AWS Deployment Contract](aws-deployment-contract.md)
+- [AWS Deployment Contract](../../docs/aws-deployment-contract.md)
 - [/Users/chranama/career/llm-extraction-platform/docs/runtime-quality-scorecard.md](/Users/chranama/career/llm-extraction-platform/docs/runtime-quality-scorecard.md)

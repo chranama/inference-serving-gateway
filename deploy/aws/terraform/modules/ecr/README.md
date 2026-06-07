@@ -1,7 +1,12 @@
 # ECR Module
 
-Planned responsibility:
+Implements the canonical ECR repositories for the AWS slice:
 
-- `llm-server` ECR repository
-- `inference-serving-gateway` ECR repository
-- image retention policy defaults
+- `llm-server`
+- `inference-serving-gateway`
+- basic lifecycle and scanning defaults
+
+First-slice goal:
+
+- keep repository names stable enough that contract docs, CI, and deploy notes do not drift apart
+- keep retention policy intentionally small for a bounded proof environment

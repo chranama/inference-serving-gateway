@@ -1,11 +1,13 @@
 # IAM Module
 
-Planned responsibility:
+Implements the bounded IAM surface for the AWS slice:
 
-- bounded IAM roles and policies needed for the first AWS slice
-- support for image push and cluster-related access
+- EKS cluster role
+- managed node-group role
+- GitHub Actions OIDC provider and ECR publish role
 
 First-slice goal:
 
 - minimum viable IAM surface
 - avoid broad or premature IAM sprawl
+- make the split between provisioning, publish, and runtime identities explicit before workload deployment begins

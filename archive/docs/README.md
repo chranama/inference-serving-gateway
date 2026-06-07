@@ -14,7 +14,6 @@ current public documentation lives in [`../../docs/`](../../docs/).
 - [OpenTelemetry Walkthrough](opentelemetry-walkthrough.md)
 - [Local Environment Contract](local-environment-contract.md)
 - [Kind Deployment Contract](kind-deployment-contract.md)
-- [AWS Deployment Contract](aws-deployment-contract.md)
 - [v1 Rollout Plan](v1-rollout-plan.md)
 - [v1 Release Checklist](v1-release-checklist.md)
 - [v1+ Future Improvements](v1+-future-improvements.md)
