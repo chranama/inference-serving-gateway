@@ -28,6 +28,11 @@ output "node_group_name" {
   value       = aws_eks_node_group.this.node_group_name
 }
 
+output "gpu_node_group_name" {
+  description = "Optional model-runtime GPU managed node group name."
+  value       = try(aws_eks_node_group.gpu[0].node_group_name, null)
+}
+
 output "oidc_issuer" {
   description = "OIDC issuer URL for future workload identity use."
   value       = try(aws_eks_cluster.this.identity[0].oidc[0].issuer, null)

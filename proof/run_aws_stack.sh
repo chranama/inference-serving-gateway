@@ -9,9 +9,26 @@ AWS_REGION="${AWS_REGION:-us-east-1}"
 CLUSTER_NAME="${CLUSTER_NAME:-llm-runtime-dev}"
 NAMESPACE="${NAMESPACE:-llm}"
 TF_DIR="${TF_DIR:-${REPO_ROOT}/deploy/aws/terraform/environments/dev}"
-ARTIFACT_DIR="${ARTIFACT_DIR:-${SCRIPT_DIR}/artifacts/aws_stack/latest}"
+AWS_WORKFLOW="${AWS_WORKFLOW:-fake}"
 
-BACKEND_OVERLAY="${BACKEND_OVERLAY:-${BACKEND_REPO_ROOT}/deploy/k8s/overlays/aws-eks}"
+case "${AWS_WORKFLOW}" in
+  fake)
+    DEFAULT_BACKEND_OVERLAY="${BACKEND_REPO_ROOT}/deploy/k8s/overlays/aws-eks"
+    DEFAULT_ARTIFACT_DIR="${SCRIPT_DIR}/artifacts/aws_stack/latest"
+    ;;
+  vllm)
+    DEFAULT_BACKEND_OVERLAY="${BACKEND_REPO_ROOT}/deploy/k8s/overlays/aws-eks-vllm"
+    DEFAULT_ARTIFACT_DIR="${SCRIPT_DIR}/artifacts/aws_stack/vllm_latest"
+    ;;
+  *)
+    DEFAULT_BACKEND_OVERLAY="${BACKEND_REPO_ROOT}/deploy/k8s/overlays/aws-eks"
+    DEFAULT_ARTIFACT_DIR="${SCRIPT_DIR}/artifacts/aws_stack/${AWS_WORKFLOW}_latest"
+    ;;
+esac
+
+ARTIFACT_DIR="${ARTIFACT_DIR:-${DEFAULT_ARTIFACT_DIR}}"
+
+BACKEND_OVERLAY="${BACKEND_OVERLAY:-${DEFAULT_BACKEND_OVERLAY}}"
 GATEWAY_OVERLAY="${GATEWAY_OVERLAY:-${REPO_ROOT}/deploy/k8s/aws-eks}"
 BACKEND_PLACEHOLDER="012345678901.dkr.ecr.us-east-1.amazonaws.com/llm-server:aws-dev-latest"
 GATEWAY_PLACEHOLDER="012345678901.dkr.ecr.us-east-1.amazonaws.com/inference-serving-gateway:aws-dev-latest"
@@ -20,6 +37,9 @@ PROOF_USER_KEY="${PROOF_USER_KEY:-aws-proof-user-key}"
 PROOF_ADMIN_KEY="${PROOF_ADMIN_KEY:-aws-proof-admin-key}"
 ALB_CONTROLLER_VERSION="${ALB_CONTROLLER_VERSION:-v2.14.1}"
 ALB_CONTROLLER_POLICY_NAME="${ALB_CONTROLLER_POLICY_NAME:-AWSLoadBalancerControllerIAMPolicy}"
+AWS_GPU_VCPU_QUOTA_CODE="${AWS_GPU_VCPU_QUOTA_CODE:-L-DB2E81BA}"
+AWS_GPU_VCPU_QUOTA_NAME="${AWS_GPU_VCPU_QUOTA_NAME:-Running On-Demand G and VT instances}"
+AWS_GPU_REQUIRED_VCPUS="${AWS_GPU_REQUIRED_VCPUS:-4}"
 CURL_RESOLVE_ARGS=()
 
 usage() {
@@ -31,6 +51,7 @@ Usage:
   proof/run_aws_stack.sh kubeconfig
   proof/run_aws_stack.sh install-cloudwatch
   proof/run_aws_stack.sh install-alb-controller
+  proof/run_aws_stack.sh install-gpu-device-plugin
   proof/run_aws_stack.sh render
   proof/run_aws_stack.sh create-secret
   proof/run_aws_stack.sh deploy
@@ -46,6 +67,7 @@ Environment:
   AWS_REGION                  default: us-east-1
   CLUSTER_NAME                default: llm-runtime-dev
   NAMESPACE                   default: llm
+  AWS_WORKFLOW                fake | vllm (default: fake)
   BACKEND_REPO_ROOT           default: ../llm-extraction-platform
   GATEWAY_IMAGE               optional explicit ECR image URI:tag
   BACKEND_IMAGE               optional explicit ECR image URI:tag
@@ -53,11 +75,17 @@ Environment:
   REDIS_URL                   optional explicit backend Redis URL
   PROOF_USER_KEY              default: aws-proof-user-key
   PROOF_ADMIN_KEY             default: aws-proof-admin-key
-  ARTIFACT_DIR                default: proof/artifacts/aws_stack/latest
+  ARTIFACT_DIR                default: latest for fake, vllm_latest for vLLM
+  AWS_GPU_REQUIRED_VCPUS      default: 4 for the promoted g6.xlarge vLLM node
+  AWS_GPU_VCPU_QUOTA_CODE     default: L-DB2E81BA
 
 The harness assumes the bounded dev Terraform substrate has been applied before
 deploying workloads. It creates a Kubernetes Secret from environment values and
 Terraform/AWS outputs; no live secret values are committed to the repository.
+
+The fake workflow uses the deterministic backend overlay. The vLLM workflow
+requires Terraform to be applied with enable_gpu_node_group=true and requires an
+NVIDIA device-plugin path before the vLLM pod can schedule and see a GPU.
 USAGE
 }
 
@@ -72,6 +100,47 @@ fail() {
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "$1 is required"
+}
+
+gpu_quota_preflight() {
+  need_cmd aws
+  need_cmd jq
+  need_cmd python3
+
+  local preflight_dir identity_file quota_file quota_value
+  preflight_dir="${ARTIFACT_DIR}/preflight"
+  identity_file="${preflight_dir}/aws_identity.json"
+  quota_file="${preflight_dir}/ec2_gpu_vcpu_quota.json"
+  ensure_dir "${preflight_dir}"
+
+  if ! aws sts get-caller-identity --output json > "${identity_file}"; then
+    fail "AWS credentials are unavailable; run aws sso login before the vLLM workflow"
+  fi
+
+  if ! aws service-quotas get-service-quota \
+    --region "${AWS_REGION}" \
+    --service-code ec2 \
+    --quota-code "${AWS_GPU_VCPU_QUOTA_CODE}" \
+    --output json > "${quota_file}"; then
+    fail "could not read EC2 quota ${AWS_GPU_VCPU_QUOTA_CODE} (${AWS_GPU_VCPU_QUOTA_NAME}) in ${AWS_REGION}"
+  fi
+
+  quota_value="$(jq -r '.Quota.Value // empty' "${quota_file}")"
+  [[ -n "${quota_value}" && "${quota_value}" != "null" ]] || fail "EC2 GPU-family vCPU quota value is missing from ${quota_file}"
+
+  if ! QUOTA_VALUE="${quota_value}" REQUIRED_VCPUS="${AWS_GPU_REQUIRED_VCPUS}" python3 - <<'PY'
+import os
+import sys
+
+quota = float(os.environ["QUOTA_VALUE"])
+required = float(os.environ["REQUIRED_VCPUS"])
+sys.exit(0 if quota >= required else 1)
+PY
+  then
+    fail "${AWS_GPU_VCPU_QUOTA_NAME} quota is ${quota_value} vCPUs in ${AWS_REGION}; ${AWS_GPU_REQUIRED_VCPUS} vCPUs are required for the promoted vLLM workflow"
+  fi
+
+  log "${AWS_GPU_VCPU_QUOTA_NAME} quota is ${quota_value} vCPUs; required >= ${AWS_GPU_REQUIRED_VCPUS}"
 }
 
 ensure_dir() {
@@ -131,6 +200,7 @@ preflight() {
   [[ -d "${BACKEND_REPO_ROOT}" ]] || fail "BACKEND_REPO_ROOT does not exist: ${BACKEND_REPO_ROOT}"
   [[ -d "${BACKEND_OVERLAY}" ]] || fail "Backend AWS overlay does not exist: ${BACKEND_OVERLAY}"
   [[ -d "${GATEWAY_OVERLAY}" ]] || fail "Gateway AWS overlay does not exist: ${GATEWAY_OVERLAY}"
+  [[ "${AWS_WORKFLOW}" == "fake" || "${AWS_WORKFLOW}" == "vllm" ]] || fail "AWS_WORKFLOW must be fake or vllm"
 
   if ! command -v aws >/dev/null 2>&1; then
     log "aws CLI is not installed; render-only validation can run, but live AWS commands cannot."
@@ -140,6 +210,10 @@ preflight() {
   fi
   if ! command -v eksctl >/dev/null 2>&1; then
     log "eksctl is not installed; install-alb-controller cannot create the IRSA service account."
+  fi
+  if [[ "${AWS_WORKFLOW}" == "vllm" ]]; then
+    log "vLLM workflow selected; ensure Terraform has enable_gpu_node_group=true before deploy."
+    gpu_quota_preflight
   fi
 
   log "preflight complete"
@@ -242,6 +316,14 @@ install_alb_controller() {
   kubectl -n kube-system rollout status deployment/aws-load-balancer-controller --timeout=180s
 }
 
+install_gpu_device_plugin() {
+  need_cmd kubectl
+
+  log "installing or updating NVIDIA Kubernetes device plugin"
+  kubectl apply -f "https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.17.1/deployments/static/nvidia-device-plugin.yml"
+  kubectl -n kube-system rollout status daemonset/nvidia-device-plugin-daemonset --timeout=180s
+}
+
 render_with_images() {
   local overlay image_placeholder image_value
   overlay="$1"
@@ -277,6 +359,7 @@ render() {
   render_with_images "${GATEWAY_OVERLAY}" "${GATEWAY_PLACEHOLDER}" "$(gateway_image)" > "${gateway_yaml}"
 
   {
+    echo "aws_workflow=${AWS_WORKFLOW}"
     echo "backend_image=$(backend_image)"
     echo "gateway_image=$(gateway_image)"
     echo "backend_overlay=${BACKEND_OVERLAY}"
@@ -356,6 +439,9 @@ deploy() {
 
   kubectl -n "${NAMESPACE}" wait --for=condition=complete job/db-migrate --timeout=180s
   kubectl -n "${NAMESPACE}" wait --for=condition=complete job/seed-proof-keys --timeout=180s
+  if kubectl -n "${NAMESPACE}" get deployment/vllm >/dev/null 2>&1; then
+    kubectl -n "${NAMESPACE}" rollout status deployment/vllm --timeout="${VLLM_ROLLOUT_TIMEOUT:-900s}"
+  fi
   kubectl -n "${NAMESPACE}" rollout status deployment/api --timeout=180s
   kubectl -n "${NAMESPACE}" rollout status deployment/extract-worker --timeout=180s
   kubectl -n "${NAMESPACE}" rollout status deployment/gateway --timeout=180s
@@ -428,7 +514,7 @@ curl_get() {
 configure_curl_resolve() {
   local host ip
   host="$1"
-  ip="$(ALB_HOST="${host}" python3 - <<'PY'
+  ip="$(ALB_HOST="${host}" python3 - <<'PY' || true
 import os
 import socket
 
@@ -443,7 +529,12 @@ else:
     raise SystemExit(f"could not resolve IPv4 address for {host}")
 PY
 )"
-  CURL_RESOLVE_ARGS=(--resolve "${host}:80:${ip}")
+  if [[ -n "${ip}" ]]; then
+    CURL_RESOLVE_ARGS=(--resolve "${host}:80:${ip}")
+  else
+    log "could not pre-resolve ${host}; falling back to curl DNS resolution"
+    CURL_RESOLVE_ARGS=()
+  fi
 }
 
 smoke() {
@@ -533,9 +624,15 @@ inspect() {
   kubectl -n "${NAMESPACE}" logs deployment/api --tail=200 > "${inspect_dir}/backend-api.logs.txt" || true
   kubectl -n "${NAMESPACE}" logs deployment/extract-worker --tail=200 > "${inspect_dir}/worker.logs.txt" || true
   kubectl -n "${NAMESPACE}" logs deployment/otel-collector --tail=200 > "${inspect_dir}/otel-collector.logs.txt" || true
+  if kubectl -n "${NAMESPACE}" get deployment/vllm >/dev/null 2>&1; then
+    kubectl -n "${NAMESPACE}" logs deployment/vllm --tail=200 > "${inspect_dir}/vllm.logs.txt" || true
+  fi
 
   capture_port_forward_metrics gateway 18080 8080 "${inspect_dir}/gateway.metrics.txt"
   capture_port_forward_metrics api 18000 8000 "${inspect_dir}/backend.metrics.txt"
+  if kubectl -n "${NAMESPACE}" get svc/vllm >/dev/null 2>&1; then
+    capture_port_forward_metrics vllm 18001 8000 "${inspect_dir}/vllm.metrics.txt"
+  fi
 
   if command -v aws >/dev/null 2>&1; then
     aws logs describe-log-groups \
@@ -641,6 +738,7 @@ main() {
     kubeconfig) kubeconfig ;;
     install-cloudwatch) install_cloudwatch ;;
     install-alb-controller) install_alb_controller ;;
+    install-gpu-device-plugin) install_gpu_device_plugin ;;
     render) render ;;
     create-secret) create_secret ;;
     deploy) deploy ;;

@@ -64,6 +64,7 @@ output "cluster_summary" {
     cluster_endpoint          = module.eks.cluster_endpoint
     cluster_security_group_id = module.eks.cluster_security_group_id
     node_group_name           = module.eks.node_group_name
+    gpu_node_group_name       = module.eks.gpu_node_group_name
     oidc_issuer               = module.eks.oidc_issuer
   }
 }

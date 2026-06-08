@@ -66,6 +66,60 @@ variable "node_capacity_type" {
   default     = "ON_DEMAND"
 }
 
+variable "enable_gpu_node_group" {
+  type        = bool
+  description = "Whether to create the optional model-runtime GPU node group."
+  default     = false
+}
+
+variable "gpu_node_group_name" {
+  type        = string
+  description = "Suffix used for the optional model-runtime GPU node group."
+  default     = "model"
+}
+
+variable "gpu_node_instance_types" {
+  type        = list(string)
+  description = "Instance types for the optional model-runtime GPU node group."
+  default     = ["g6.xlarge"]
+}
+
+variable "gpu_node_desired_size" {
+  type        = number
+  description = "Desired node count for the optional model-runtime GPU node group."
+  default     = 1
+}
+
+variable "gpu_node_min_size" {
+  type        = number
+  description = "Minimum node count for the optional model-runtime GPU node group."
+  default     = 0
+}
+
+variable "gpu_node_max_size" {
+  type        = number
+  description = "Maximum node count for the optional model-runtime GPU node group."
+  default     = 1
+}
+
+variable "gpu_node_disk_size" {
+  type        = number
+  description = "Disk size in GiB for each optional model-runtime GPU node."
+  default     = 120
+}
+
+variable "gpu_node_capacity_type" {
+  type        = string
+  description = "Capacity type for the optional model-runtime GPU node group."
+  default     = "ON_DEMAND"
+}
+
+variable "gpu_node_ami_type" {
+  type        = string
+  description = "EKS optimized accelerated AMI type for the optional GPU node group."
+  default     = "AL2023_x86_64_NVIDIA"
+}
+
 variable "endpoint_public_access" {
   type        = bool
   description = "Whether the EKS API endpoint is public."

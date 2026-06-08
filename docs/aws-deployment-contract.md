@@ -18,14 +18,17 @@ Implemented or scaffolded surfaces:
 - AWS/EKS gateway overlay path in this repository at `deploy/k8s/aws-eks/`.
 - Backend-specific AWS overlay path in the backend repository at
   `deploy/k8s/overlays/aws-eks/`.
+- Backend vLLM overlay path in the backend repository at
+  `deploy/k8s/overlays/aws-eks-vllm/`.
 - Joint AWS harness at `proof/run_aws_stack.sh`.
+- Harness workflow selection with `AWS_WORKFLOW=fake` and `AWS_WORKFLOW=vllm`.
 
 Still pending:
 
-- live AWS account preflight, budget setup, and credentials;
 - AWS image publication into ECR;
 - AWS Load Balancer Controller and CloudWatch Observability add-on execution;
-- deployed smoke, inspection, rollback, and teardown proof artifacts.
+- deployed fake-backend smoke, inspection, rollback, and teardown proof artifacts;
+- deployed vLLM smoke, inspection, rollback, and teardown proof artifacts.
 
 ## Deployment Objective
 
@@ -37,12 +40,20 @@ ALB
   -> inference-serving-gateway
       -> llm-extraction-platform API
       -> llm-extraction-platform async worker
+      -> optional vLLM model runtime
       -> RDS PostgreSQL
       -> ElastiCache Redis
 ```
 
 The gateway is the public ingress boundary. The backend API and worker are
 internal runtime services behind that boundary.
+
+The contract promotes two AWS workflows:
+
+| Workflow | Runtime Target | What It Proves |
+|---|---|---|
+| `AWS_WORKFLOW=fake` | Deterministic in-process backend | Cloud deployment, public ingress, service boundaries, managed RDS/Redis, request identity, observability, and teardown |
+| `AWS_WORKFLOW=vllm` | Separate OpenAI-compatible vLLM Deployment on a GPU node group | The same cloud stack plus live model-serving integration, GPU scheduling, and model-runtime inspection |
 
 ## Non-Goals
 
@@ -70,6 +81,7 @@ legible.
 | Image architecture | `linux/amd64` |
 | Gateway ECR repository | `inference-serving-gateway` |
 | Backend ECR repository | `llm-server` |
+| Model runtime image | `vllm/vllm-openai` for `AWS_WORKFLOW=vllm` |
 | Public ingress | ALB in front of the gateway |
 | Managed database | RDS PostgreSQL |
 | Managed queue/cache | ElastiCache Redis |
@@ -96,6 +108,8 @@ The first deployment slice uses this AWS component set:
 | IAM | Defines AWS permissions for EKS, worker nodes, and GitHub Actions image publication | Terraform-owned, OIDC-based publish path |
 | EKS | Runs the Kubernetes control plane for the joint runtime | One `dev` cluster |
 | EC2 managed node group | Supplies the worker-node compute where Kubernetes pods run | One bounded node group |
+| EC2 GPU managed node group | Supplies accelerated compute for the live vLLM workflow | Disabled by default; enabled only for `AWS_WORKFLOW=vllm` |
+| EC2 `Running On-Demand G and VT instances` quota | Allows GPU-family EC2 capacity such as `g6.xlarge` to launch in the selected region | Must be at least 4 vCPUs for the promoted one-node vLLM workflow |
 | Application Load Balancer | Receives public HTTP traffic and forwards it to the gateway service | ALB DNS name first, no custom domain required |
 | AWS Load Balancer Controller | Watches Kubernetes ingress resources and creates/manages AWS load balancers | Required before ALB ingress is deployable |
 | RDS PostgreSQL | Provides the managed relational database used by the backend | Managed replacement for in-cluster Postgres |
@@ -105,6 +119,16 @@ The first deployment slice uses this AWS component set:
 
 In-cluster OTel Collector, Jaeger, Prometheus, and Grafana are part of the AWS
 runtime proof, but they are not AWS managed services in the first slice.
+
+The vLLM image is intentionally separate from the backend API image. The backend
+API image should remain a slim application image; live model-serving weight
+belongs to the model-runtime Deployment in the vLLM workflow.
+
+The vLLM workflow also depends on the regional EC2 quota named `Running
+On-Demand G and VT instances`. The first promoted target uses one `g6.xlarge`
+node, so the quota must be at least 4 vCPUs in `us-east-1`. The AWS harness
+checks this during `AWS_WORKFLOW=vllm proof/run_aws_stack.sh preflight` before
+Terraform is applied.
 
 Explicitly excluded from the first slice unless added later by contract:
 
@@ -166,6 +190,7 @@ The current substrate target includes:
 - optional NAT Gateway disabled by default;
 - ECR repositories for gateway and backend images;
 - EKS cluster and one managed node group;
+- optional GPU managed node group for live vLLM model serving;
 - RDS PostgreSQL;
 - ElastiCache Redis;
 - GitHub Actions OIDC role for ECR image publication.
@@ -182,6 +207,7 @@ Required guardrails:
 - one region;
 - one environment;
 - one bounded node group;
+- optional one-node GPU group only for the vLLM workflow;
 - no custom domain in the first slice;
 - no WAF in the first slice;
 - NAT Gateway disabled unless a validated constraint requires it;
@@ -220,6 +246,17 @@ GitHub Actions configuration:
 Local and `kind` workflows keep their local image tags. AWS deployment should not
 consume workstation-local images.
 
+Image responsibilities:
+
+| Image | Owner | Used By | Weight Policy |
+|---|---|---|---|
+| `inference-serving-gateway` | Gateway repository | Gateway Deployment | Small Go edge image |
+| `llm-server` | Backend repository | Backend API, worker, migrations, seed jobs | Slim Python application image; no default Torch/Transformers/llama.cpp stack |
+| `vllm/vllm-openai` | vLLM project | Optional vLLM model-runtime Deployment | Large model-serving image, used only by `AWS_WORKFLOW=vllm` |
+
+The application images should stay deployable on the bounded CPU node group. GPU
+and model-serving dependencies are isolated to the optional vLLM workflow.
+
 ## Kubernetes Runtime Contract
 
 The AWS workload topology should be a cloud deployment of the proven joint
@@ -229,6 +266,7 @@ Kubernetes shape:
 - gateway Ingress through AWS ALB;
 - backend API Deployment and internal Service;
 - backend worker Deployment;
+- optional vLLM Deployment and Service for `AWS_WORKFLOW=vllm`;
 - database migration Job;
 - proof-key or bounded usage seed Job;
 - OTel Collector;
@@ -260,7 +298,8 @@ Required runtime inputs:
 - gateway upstream base URL;
 - OTel collector endpoint;
 - model/config profile;
-- any model-provider secrets if a live model backend is later promoted.
+- optional `HF_TOKEN` only when the selected vLLM model requires Hugging Face
+  authentication.
 
 Preferred managed source:
 
@@ -293,6 +332,7 @@ The AWS slice must preserve the current inspection model:
 - gateway logs;
 - backend API logs;
 - worker logs;
+- vLLM logs and metrics for `AWS_WORKFLOW=vllm`;
 - gateway metrics;
 - backend metrics;
 - OTel traces;
@@ -316,8 +356,10 @@ Minimum workflow:
 
 1. `apply`
    - provision or confirm Terraform substrate;
+   - enable the GPU node group when `AWS_WORKFLOW=vllm`;
    - deploy AWS/EKS manifests;
-   - wait for gateway, backend, worker, and data dependencies.
+   - install the NVIDIA device plugin when `AWS_WORKFLOW=vllm`;
+   - wait for gateway, backend, worker, optional vLLM, and data dependencies.
 2. `smoke`
    - call gateway health through the ALB path;
    - run one sync extract through ALB;
@@ -326,6 +368,7 @@ Minimum workflow:
 3. `inspect`
    - capture CloudWatch log queries or log excerpts;
    - capture gateway and backend metrics;
+   - capture vLLM logs and metrics when `AWS_WORKFLOW=vllm`;
    - capture one trace view or exported trace payload;
    - capture one usage or quota/cost snapshot tied to the proof key.
 4. `rollback-or-teardown`
@@ -338,6 +381,7 @@ The proof pack should make a reviewer able to answer:
 - did the gateway reach the backend?
 - did the worker complete async work?
 - did managed Postgres and Redis participate?
+- did vLLM become reachable by the backend when the live workflow is selected?
 - can one request be followed through logs, metrics, and traces?
 - what operator decision would cause rollback or teardown?
 
@@ -400,10 +444,19 @@ The AWS deployment contract is satisfied when:
 - rollback or teardown is documented and exercised;
 - docs and proof artifacts match the actual deployed shape.
 
+For the vLLM workflow, satisfaction also requires:
+
+- Terraform can provision the optional GPU node group;
+- the NVIDIA device plugin is installed;
+- the vLLM Deployment becomes ready on a GPU node;
+- backend extract calls reach the vLLM OpenAI-compatible endpoint;
+- vLLM logs and metrics are captured in the proof artifact set.
+
 ## Implementation Gaps To Close Next
 
-1. Configure live AWS credentials and billing guardrails.
-2. Apply the Terraform substrate.
-3. Publish gateway and backend images into ECR.
-4. Install AWS Load Balancer Controller and CloudWatch Observability.
-5. Run the joint AWS harness through deploy, smoke, inspect, and teardown.
+1. Publish gateway and backend images into ECR.
+2. Apply the Terraform substrate for `AWS_WORKFLOW=fake`.
+3. Run the joint AWS harness through deploy, smoke, inspect, and teardown for
+   `AWS_WORKFLOW=fake`.
+4. Enable the GPU node group and install the NVIDIA device plugin.
+5. Run deploy, smoke, inspect, and teardown for `AWS_WORKFLOW=vllm`.

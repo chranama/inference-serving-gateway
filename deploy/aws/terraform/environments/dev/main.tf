@@ -122,6 +122,13 @@ module "eks" {
   node_max_size           = var.node_max_size
   node_disk_size          = var.node_disk_size
   node_capacity_type      = var.node_capacity_type
+  enable_gpu_node_group   = var.enable_gpu_node_group
+  gpu_node_instance_types = var.gpu_node_instance_types
+  gpu_node_desired_size   = var.gpu_node_desired_size
+  gpu_node_min_size       = var.gpu_node_min_size
+  gpu_node_max_size       = var.gpu_node_max_size
+  gpu_node_disk_size      = var.gpu_node_disk_size
+  gpu_node_capacity_type  = var.gpu_node_capacity_type
   endpoint_public_access  = true
   endpoint_private_access = false
   tags                    = local.default_tags
@@ -161,6 +168,7 @@ locals {
       github_actions_role_arn = module.iam.github_actions_role_arn
       eks_cluster_arn         = module.eks.cluster_arn
       eks_cluster_endpoint    = module.eks.cluster_endpoint
+      gpu_node_group_name     = module.eks.gpu_node_group_name
       postgres_endpoint       = module.data.postgres_endpoint
       redis_endpoint          = module.data.redis_endpoint
     },

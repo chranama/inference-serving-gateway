@@ -110,6 +110,48 @@ variable "node_capacity_type" {
   default     = "ON_DEMAND"
 }
 
+variable "enable_gpu_node_group" {
+  type        = bool
+  description = "Whether to create the optional model-runtime GPU node group for the vLLM AWS workflow."
+  default     = false
+}
+
+variable "gpu_node_instance_types" {
+  type        = list(string)
+  description = "Instance types for the optional model-runtime GPU node group."
+  default     = ["g6.xlarge"]
+}
+
+variable "gpu_node_desired_size" {
+  type        = number
+  description = "Desired node count for the optional model-runtime GPU node group."
+  default     = 1
+}
+
+variable "gpu_node_min_size" {
+  type        = number
+  description = "Minimum node count for the optional model-runtime GPU node group."
+  default     = 0
+}
+
+variable "gpu_node_max_size" {
+  type        = number
+  description = "Maximum node count for the optional model-runtime GPU node group."
+  default     = 1
+}
+
+variable "gpu_node_disk_size" {
+  type        = number
+  description = "Disk size in GiB for each optional model-runtime GPU node."
+  default     = 120
+}
+
+variable "gpu_node_capacity_type" {
+  type        = string
+  description = "Capacity type for the optional model-runtime GPU node group."
+  default     = "ON_DEMAND"
+}
+
 variable "db_name" {
   type        = string
   description = "Initial Postgres database name for the platform."

@@ -10,14 +10,23 @@ ALB
   -> inference-serving-gateway
       -> llm-extraction-platform API
       -> llm-extraction-platform worker
+      -> optional vLLM model runtime
       -> RDS PostgreSQL
       -> ElastiCache Redis
 ```
 
-The first AWS slice proves cloud deployment, service boundaries, managed data,
-request identity, and inspection. It uses the deterministic backend profile. It
-does not promote live model serving, custom domains, WAF, production HA, or
-always-on operation.
+The AWS proof has two promoted workflows:
+
+| Workflow | Purpose | Backend Runtime | Artifact Directory |
+|---|---|---|---|
+| `AWS_WORKFLOW=fake` | Prove cloud deployment, service boundaries, managed data, request identity, and inspection with a deterministic backend | In-process fake backend in the backend API image | `proof/artifacts/aws_stack/latest/` |
+| `AWS_WORKFLOW=vllm` | Prove the same stack with a live OpenAI-compatible model runtime | Separate `vllm/vllm-openai` Deployment on a GPU node group | `proof/artifacts/aws_stack/vllm_latest/` |
+
+Both workflows keep the gateway as the public ingress boundary. The vLLM path
+adds a model-runtime service, but it does not make the model backend public.
+
+The proof does not promote custom domains, WAF, production HA, or always-on
+operation.
 
 ## Cost Guardrails
 
@@ -66,6 +75,7 @@ Backend repository:
 - Backend AWS overlay.
 - API, worker, migration, and proof-key seed jobs.
 - Managed RDS/Redis runtime wiring.
+- Optional vLLM model-runtime overlay for the live backend workflow.
 
 Default sibling layout:
 
@@ -84,11 +94,14 @@ Canonical harness:
 proof/run_aws_stack.sh
 ```
 
-Proof artifacts are written to:
+Select the workflow with `AWS_WORKFLOW`:
 
-```text
-proof/artifacts/aws_stack/latest/
+```bash
+AWS_WORKFLOW=fake proof/run_aws_stack.sh <command>
+AWS_WORKFLOW=vllm proof/run_aws_stack.sh <command>
 ```
+
+If `AWS_WORKFLOW` is unset, the harness defaults to `fake`.
 
 ## Workflow
 
@@ -100,7 +113,41 @@ proof/run_aws_stack.sh preflight
 
 This checks local tooling and repository layout.
 
+For the live model workflow, preflight also checks AWS identity and the regional
+EC2 GPU-family vCPU quota before Terraform creates the GPU node group:
+
+```bash
+AWS_WORKFLOW=vllm proof/run_aws_stack.sh preflight
+```
+
+The promoted vLLM node target is `g6.xlarge`, which requires 4 vCPUs from the
+`Running On-Demand G and VT instances` EC2 quota in `us-east-1`. The harness
+stores the quota response in:
+
+```text
+proof/artifacts/aws_stack/vllm_latest/preflight/ec2_gpu_vcpu_quota.json
+```
+
+If the quota is lower than the required value, request an increase in Service
+Quotas before running `terraform-apply`. Override the check only when the
+Terraform GPU target changes:
+
+```bash
+AWS_WORKFLOW=vllm AWS_GPU_REQUIRED_VCPUS=8 proof/run_aws_stack.sh preflight
+```
+
 ### 2. Plan The Substrate
+
+For the deterministic workflow, the default `terraform.tfvars` shape is enough.
+For the vLLM workflow, enable the GPU node group before planning:
+
+```hcl
+enable_gpu_node_group = true
+gpu_node_instance_types = ["g6.xlarge"]
+gpu_node_desired_size = 1
+gpu_node_min_size = 0
+gpu_node_max_size = 1
+```
 
 ```bash
 proof/run_aws_stack.sh terraform-plan
@@ -112,6 +159,7 @@ Review the plan before applying. The expected substrate is:
 - ECR repositories for both images.
 - IAM roles for EKS, worker nodes, and GitHub Actions image publication.
 - EKS cluster and bounded managed node group.
+- Optional GPU managed node group for `AWS_WORKFLOW=vllm`.
 - RDS PostgreSQL.
 - ElastiCache Redis.
 
@@ -164,6 +212,16 @@ The harness follows the AWS Helm/eksctl path:
 - install or upgrade the controller with Helm;
 - wait for controller rollout.
 
+For `AWS_WORKFLOW=vllm`, install the NVIDIA device plugin after the GPU node
+group exists:
+
+```bash
+AWS_WORKFLOW=vllm proof/run_aws_stack.sh install-gpu-device-plugin
+```
+
+The vLLM pod requests `nvidia.com/gpu: 1` and is scheduled only on nodes labeled
+for the model-runtime workload.
+
 ### 7. Render Manifests
 
 ```bash
@@ -174,6 +232,7 @@ This renders:
 
 - backend overlay from `llm-extraction-platform`;
 - gateway overlay from this repository;
+- vLLM Deployment and Service when `AWS_WORKFLOW=vllm`;
 - image substitutions from Terraform outputs or explicit image environment
   variables.
 
@@ -181,6 +240,7 @@ Rendered YAML is stored under:
 
 ```text
 proof/artifacts/aws_stack/latest/rendered/
+proof/artifacts/aws_stack/vllm_latest/rendered/
 ```
 
 ### 8. Deploy Workloads
@@ -196,7 +256,8 @@ The harness:
   values;
 - applies backend manifests;
 - applies gateway manifests;
-- waits for migrations, proof-key seed, API, worker, gateway, OTel, and Jaeger.
+- waits for migrations, proof-key seed, API, worker, gateway, OTel, and Jaeger;
+- waits for vLLM rollout when `AWS_WORKFLOW=vllm`.
 
 Runtime secret values are not committed.
 
@@ -232,6 +293,7 @@ This captures:
 - gateway logs;
 - backend API logs;
 - worker logs;
+- vLLM logs and metrics when `AWS_WORKFLOW=vllm`;
 - OTel collector logs;
 - gateway metrics;
 - backend metrics;
@@ -269,3 +331,7 @@ The proof is acceptable when:
 - Logs and metrics are inspectable.
 - CloudWatch log inventory or correlated events are captured.
 - The stack can be deleted or destroyed cleanly.
+
+For `AWS_WORKFLOW=vllm`, the proof is acceptable only when the GPU node group is
+present, the NVIDIA device plugin is installed, vLLM becomes ready, and extract
+traffic succeeds through the same ALB -> gateway -> backend path.
