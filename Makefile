@@ -1,4 +1,4 @@
-.PHONY: fmt test run build proof proof-host proof-compose proof-otel proof-kind-up proof-kind-status proof-kind proof-kind-down proof-isolated aws-preflight aws-render aws-status aws-smoke aws-inspect
+.PHONY: fmt test run build proof proof-host proof-compose proof-otel proof-kind-up proof-kind-status proof-kind proof-kind-down proof-isolated joint-kind-up joint-kind-status joint-kind-proof joint-kind-down aws-preflight aws-render aws-status aws-smoke aws-inspect
 
 fmt:
 	find . -name '*.go' -not -path './vendor/*' -print0 | xargs -0 gofmt -w
@@ -37,6 +37,18 @@ proof-kind-down:
 	proof/run_mock_kind_stack.sh down
 
 proof-isolated: proof-host proof-compose proof-otel
+
+joint-kind-up:
+	PHASE2_KIND_WORKFLOW=live proof/run_kind_stack.sh up
+
+joint-kind-status:
+	PHASE2_KIND_WORKFLOW=live proof/run_kind_stack.sh status
+
+joint-kind-proof:
+	PHASE2_KIND_WORKFLOW=live proof/run_kind_stack.sh proof
+
+joint-kind-down:
+	PHASE2_KIND_WORKFLOW=live proof/run_kind_stack.sh down
 
 aws-preflight:
 	proof/run_aws_stack.sh preflight

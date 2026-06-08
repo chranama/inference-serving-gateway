@@ -5,20 +5,47 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GATEWAY_REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 CAREER_ROOT="$(cd "${GATEWAY_REPO_ROOT}/.." && pwd)"
 BACKEND_REPO_ROOT="${CAREER_ROOT}/llm-extraction-platform"
-BACKEND_OVERLAY="${BACKEND_REPO_ROOT}/deploy/k8s/overlays/local-observability-kind"
-GATEWAY_KUSTOMIZATION="${GATEWAY_REPO_ROOT}/deploy/k8s/local-kind-stack"
+BACKEND_OVERLAY_FAKE="${BACKEND_REPO_ROOT}/deploy/k8s/overlays/local-observability-kind"
+BACKEND_OVERLAY_LIVE="${BACKEND_REPO_ROOT}/deploy/k8s/overlays/local-live-llama-kind"
+GATEWAY_KUSTOMIZATION_FAKE="${GATEWAY_REPO_ROOT}/deploy/k8s/local-kind-stack"
+GATEWAY_KUSTOMIZATION_LIVE="${GATEWAY_REPO_ROOT}/deploy/k8s/local-kind-live-stack"
 KIND_CONFIG="${BACKEND_REPO_ROOT}/deploy/k8s/kind/kind-config.yaml"
 BACKEND_IMAGE_TAG="llm-server:dev"
 GATEWAY_IMAGE_TAG="inference-serving-gateway:dev"
+LLAMA_SERVER_IMAGE_TAG="${LLAMA_SERVER_IMAGE:-llmep-llama-server:b8069}"
+POSTGRES_IMAGE_TAG="${POSTGRES_IMAGE:-postgres:16-alpine}"
+REDIS_IMAGE_TAG="${REDIS_IMAGE:-redis:7-alpine}"
+OTEL_COLLECTOR_IMAGE_TAG="${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.122.1}"
+JAEGER_IMAGE_TAG="${JAEGER_IMAGE:-jaegertracing/all-in-one:1.62.0}"
 ARTIFACT_DIR="${SCRIPT_DIR}/artifacts/kind_stack"
 
+: "${PHASE2_KIND_WORKFLOW:=live}"
 : "${PHASE2_KIND_CLUSTER:=llm}"
 : "${PHASE2_KIND_NAMESPACE:=llm}"
 : "${PHASE2_KIND_API_LOCAL_PORT:=18080}"
 : "${PHASE2_KIND_GATEWAY_LOCAL_PORT:=18084}"
 : "${PHASE2_KIND_JAEGER_LOCAL_PORT:=16686}"
+: "${PHASE2_KIND_LLAMA_LOCAL_PORT:=18088}"
 : "${PHASE2_PROOF_USER_KEY:=proof-user-key}"
 : "${PHASE2_PROOF_ADMIN_KEY:=proof-admin-key}"
+: "${PHASE2_KIND_ENV_FILE:=${BACKEND_REPO_ROOT}/.env.docker}"
+: "${PHASE2_KIND_REBUILD_LLAMA:=0}"
+: "${PHASE2_KIND_PRELOAD_IMAGES:=1}"
+
+case "${PHASE2_KIND_WORKFLOW}" in
+  live)
+    BACKEND_OVERLAY="${BACKEND_OVERLAY_LIVE}"
+    GATEWAY_KUSTOMIZATION="${GATEWAY_KUSTOMIZATION_LIVE}"
+    ;;
+  fake)
+    BACKEND_OVERLAY="${BACKEND_OVERLAY_FAKE}"
+    GATEWAY_KUSTOMIZATION="${GATEWAY_KUSTOMIZATION_FAKE}"
+    ;;
+  *)
+    echo "PHASE2_KIND_WORKFLOW must be live or fake; got: ${PHASE2_KIND_WORKFLOW}" >&2
+    exit 2
+    ;;
+esac
 
 usage() {
   cat <<'EOF'
@@ -28,10 +55,28 @@ Usage:
   proof/run_kind_stack.sh status
   proof/run_kind_stack.sh proof
 
-This is the Kubernetes-shaped Phase 2 path. It complements
-proof/run_local_stack.sh, which uses Docker Compose for infra and
-host-run processes for the app services.
+This is the primary local Kubernetes-shaped path. By default it runs the
+live-model workflow:
+
+  PHASE2_KIND_WORKFLOW=live
+
+Live mode mounts LLAMA_MODELS_DIR from the host into the kind node at /models and
+runs a CPU-only llama.cpp model runtime in the cluster. Use
+PHASE2_KIND_WORKFLOW=fake for the older deterministic fake-backend kind smoke.
 EOF
+}
+
+clear_proof_outputs() {
+  mkdir -p "${ARTIFACT_DIR}"
+  rm -rf \
+    "${ARTIFACT_DIR}/observability_latest" \
+    "${ARTIFACT_DIR}/runtime"
+  rm -f \
+    "${ARTIFACT_DIR}/jaeger-services.json" \
+    "${ARTIFACT_DIR}/port-forward-api.log" \
+    "${ARTIFACT_DIR}/port-forward-gateway.log" \
+    "${ARTIFACT_DIR}/port-forward-jaeger.log" \
+    "${ARTIFACT_DIR}/port-forward-llama-server.log"
 }
 
 need_cmd() {
@@ -49,14 +94,136 @@ ensure_docker_ready() {
   fi
 }
 
+load_env_file_if_present() {
+  local env_file="$1"
+  [[ -f "${env_file}" ]] || return 0
+
+  local line key value
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [[ -z "${line}" || "${line}" == \#* || "${line}" != *=* ]] && continue
+    key="${line%%=*}"
+    value="${line#*=}"
+    key="${key#"${key%%[![:space:]]*}"}"
+    key="${key%"${key##*[![:space:]]}"}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    if ! [[ "${key}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+      continue
+    fi
+    if [[ "${value}" == \"*\" && "${value}" == *\" ]]; then
+      value="${value:1:${#value}-2}"
+    elif [[ "${value}" == \'*\' && "${value}" == *\' ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+    if [[ -z "${!key:-}" ]]; then
+      export "${key}=${value}"
+    fi
+  done < "${env_file}"
+}
+
+prepare_live_model_env() {
+  load_env_file_if_present "${PHASE2_KIND_ENV_FILE}"
+
+  : "${LLAMA_MODEL_FILE:=/models/smollm2-360m-instruct/Q8_0.gguf}"
+  : "${LLAMA_CTX_SIZE:=4096}"
+  : "${LLAMA_THREADS:=8}"
+  : "${LLAMA_BATCH:=256}"
+  : "${LLAMA_UBATCH:=}"
+  : "${LLAMA_N_GPU_LAYERS:=0}"
+  : "${LLAMA_SEED:=0}"
+  : "${LLAMA_TEMP:=0.7}"
+  : "${LLAMA_TOP_P:=0.95}"
+  : "${LLAMA_MLOCK:=1}"
+  : "${LLAMA_NO_MMAP:=1}"
+  : "${LLAMA_PARALLEL:=1}"
+
+  if [[ -z "${LLAMA_MODELS_DIR:-}" ]]; then
+    echo "LLAMA_MODELS_DIR is required for PHASE2_KIND_WORKFLOW=live." >&2
+    echo "Set it directly or in ${PHASE2_KIND_ENV_FILE}." >&2
+    exit 2
+  fi
+  if [[ "${LLAMA_MODEL_FILE}" != /models/* ]]; then
+    echo "LLAMA_MODEL_FILE must point inside the /models mount; got: ${LLAMA_MODEL_FILE}" >&2
+    exit 2
+  fi
+  if [[ "${LLAMA_N_GPU_LAYERS}" != "0" ]]; then
+    echo "Live kind is CPU-only; set LLAMA_N_GPU_LAYERS=0." >&2
+    exit 2
+  fi
+  export \
+    LLAMA_MODEL_FILE \
+    LLAMA_CTX_SIZE \
+    LLAMA_THREADS \
+    LLAMA_BATCH \
+    LLAMA_UBATCH \
+    LLAMA_N_GPU_LAYERS \
+    LLAMA_SEED \
+    LLAMA_TEMP \
+    LLAMA_TOP_P \
+    LLAMA_MLOCK \
+    LLAMA_NO_MMAP \
+    LLAMA_PARALLEL
+
+  local rel_model_path host_model_file
+  rel_model_path="${LLAMA_MODEL_FILE#/models/}"
+  host_model_file="${LLAMA_MODELS_DIR%/}/${rel_model_path}"
+  if [[ ! -f "${host_model_file}" ]]; then
+    echo "GGUF model file not found for live kind workflow: ${host_model_file}" >&2
+    exit 2
+  fi
+}
+
+write_live_kind_config() {
+  mkdir -p "${ARTIFACT_DIR}"
+  local generated="${ARTIFACT_DIR}/kind-config.live.yaml"
+  cat > "${generated}" <<EOF
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: ${PHASE2_KIND_CLUSTER}
+nodes:
+  - role: control-plane
+    extraMounts:
+      - hostPath: "${LLAMA_MODELS_DIR}"
+        containerPath: /models
+        readOnly: true
+EOF
+  printf '%s\n' "${generated}"
+}
+
+verify_live_kind_mount() {
+  docker exec "${PHASE2_KIND_CLUSTER}-control-plane" test -f "${LLAMA_MODEL_FILE}" || {
+    echo "Existing kind cluster does not expose ${LLAMA_MODEL_FILE} inside the node." >&2
+    echo "Delete and recreate it with: kind delete cluster --name ${PHASE2_KIND_CLUSTER}" >&2
+    echo "Then rerun: PHASE2_KIND_WORKFLOW=live proof/run_kind_stack.sh up" >&2
+    exit 2
+  }
+}
+
 ensure_kind_cluster() {
   if kind get clusters | grep -qx "${PHASE2_KIND_CLUSTER}"; then
+    if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+      verify_live_kind_mount
+    fi
     return 0
   fi
-  kind create cluster --config "${KIND_CONFIG}"
+
+  local config_path="${KIND_CONFIG}"
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    config_path="$(write_live_kind_config)"
+  fi
+  kind create cluster --config "${config_path}"
 }
 
 build_and_load_images() {
+  ensure_image_present() {
+    local image="$1"
+    if ! docker image inspect "${image}" >/dev/null 2>&1; then
+      docker pull "${image}"
+    fi
+  }
+
   docker build \
     -t "${BACKEND_IMAGE_TAG}" \
     -f "${BACKEND_REPO_ROOT}/deploy/docker/Dockerfile.server" \
@@ -68,6 +235,29 @@ build_and_load_images() {
     -f "${GATEWAY_REPO_ROOT}/Dockerfile" \
     "${GATEWAY_REPO_ROOT}"
   kind load docker-image "${GATEWAY_IMAGE_TAG}" --name "${PHASE2_KIND_CLUSTER}"
+
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    if [[ "${PHASE2_KIND_REBUILD_LLAMA}" == "1" ]] || ! docker image inspect "${LLAMA_SERVER_IMAGE_TAG}" >/dev/null 2>&1; then
+      docker build \
+        -t "${LLAMA_SERVER_IMAGE_TAG}" \
+        -f "${BACKEND_REPO_ROOT}/deploy/docker/Dockerfile.llama-server" \
+        "${BACKEND_REPO_ROOT}"
+    fi
+    kind load docker-image "${LLAMA_SERVER_IMAGE_TAG}" --name "${PHASE2_KIND_CLUSTER}"
+  fi
+
+  if [[ "${PHASE2_KIND_PRELOAD_IMAGES}" == "1" ]]; then
+    local image
+    for image in \
+      "${POSTGRES_IMAGE_TAG}" \
+      "${REDIS_IMAGE_TAG}" \
+      "${OTEL_COLLECTOR_IMAGE_TAG}" \
+      "${JAEGER_IMAGE_TAG}"
+    do
+      ensure_image_present "${image}"
+      kind load docker-image "${image}" --name "${PHASE2_KIND_CLUSTER}"
+    done
+  fi
 }
 
 kubectl_ns() {
@@ -134,7 +324,60 @@ wait_for_job_complete() {
 
 wait_for_deployment() {
   local deployment_name="$1"
-  kubectl_ns rollout status "deployment/${deployment_name}" --timeout=240s
+  local timeout="${2:-240s}"
+  kubectl_ns rollout status "deployment/${deployment_name}" --timeout="${timeout}"
+}
+
+render_backend_overlay() {
+  if [[ "${PHASE2_KIND_WORKFLOW}" != "live" ]]; then
+    kubectl kustomize "${BACKEND_OVERLAY}"
+    return 0
+  fi
+
+  kubectl kustomize "${BACKEND_OVERLAY}" | python3 -c '
+import json
+import os
+import sys
+
+text = sys.stdin.read()
+def config_value(name, default):
+    return json.dumps(str(os.environ.get(name, default)))
+
+values = {
+    "__LLAMA_MODEL_FILE__": config_value("LLAMA_MODEL_FILE", "/models/smollm2-360m-instruct/Q8_0.gguf"),
+    "__LLAMA_CTX_SIZE__": config_value("LLAMA_CTX_SIZE", "4096"),
+    "__LLAMA_THREADS__": config_value("LLAMA_THREADS", "8"),
+    "__LLAMA_BATCH__": config_value("LLAMA_BATCH", "256"),
+    "__LLAMA_UBATCH__": config_value("LLAMA_UBATCH", ""),
+    "__LLAMA_SEED__": config_value("LLAMA_SEED", "0"),
+    "__LLAMA_TEMP__": config_value("LLAMA_TEMP", "0.7"),
+    "__LLAMA_TOP_P__": config_value("LLAMA_TOP_P", "0.95"),
+    "__LLAMA_MLOCK__": config_value("LLAMA_MLOCK", "1"),
+    "__LLAMA_NO_MMAP__": config_value("LLAMA_NO_MMAP", "1"),
+    "__LLAMA_PARALLEL__": config_value("LLAMA_PARALLEL", "1"),
+}
+for placeholder, value in values.items():
+    text = text.replace(placeholder, value)
+sys.stdout.write(text)
+'
+}
+
+apply_backend_overlay() {
+  mkdir -p "${ARTIFACT_DIR}/rendered"
+  local rendered="${ARTIFACT_DIR}/rendered/backend-${PHASE2_KIND_WORKFLOW}.yaml"
+  render_backend_overlay > "${rendered}"
+  kubectl apply -f "${rendered}"
+}
+
+apply_gateway_overlay() {
+  kubectl apply -k "${GATEWAY_KUSTOMIZATION}"
+}
+
+delete_all_known_overlays() {
+  kubectl delete -k "${GATEWAY_KUSTOMIZATION_LIVE}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
+  kubectl delete -k "${GATEWAY_KUSTOMIZATION_FAKE}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
+  kubectl delete -k "${BACKEND_OVERLAY_LIVE}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
+  kubectl delete -k "${BACKEND_OVERLAY_FAKE}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
 }
 
 cmd_up() {
@@ -145,6 +388,9 @@ cmd_up() {
   ensure_docker_ready
 
   mkdir -p "${ARTIFACT_DIR}"
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    prepare_live_model_env
+  fi
 
   ensure_kind_cluster
   build_and_load_images
@@ -152,11 +398,14 @@ cmd_up() {
   kubectl_ns delete job db-migrate --ignore-not-found >/dev/null 2>&1 || true
   kubectl_ns delete job seed-proof-keys --ignore-not-found >/dev/null 2>&1 || true
 
-  kubectl apply -k "${BACKEND_OVERLAY}"
+  apply_backend_overlay
   wait_for_job_complete "db-migrate"
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    wait_for_deployment "llama-server" "${PHASE2_KIND_LLAMA_ROLLOUT_TIMEOUT:-900s}"
+  fi
   wait_for_deployment "api"
 
-  kubectl apply -k "${GATEWAY_KUSTOMIZATION}"
+  apply_gateway_overlay
   wait_for_deployment "otel-collector"
   wait_for_deployment "jaeger"
   wait_for_deployment "extract-worker"
@@ -164,6 +413,7 @@ cmd_up() {
   wait_for_job_complete "seed-proof-keys"
 
   echo "Phase 2 kind stack is up."
+  echo "Workflow: ${PHASE2_KIND_WORKFLOW}"
   echo "Namespace: ${PHASE2_KIND_NAMESPACE}"
   echo "Backend overlay: ${BACKEND_OVERLAY}"
   echo "Integrated add-ons: ${GATEWAY_KUSTOMIZATION}"
@@ -172,8 +422,7 @@ cmd_up() {
 }
 
 cmd_down() {
-  kubectl delete -k "${GATEWAY_KUSTOMIZATION}" --ignore-not-found >/dev/null 2>&1 || true
-  kubectl delete -k "${BACKEND_OVERLAY}" --ignore-not-found >/dev/null 2>&1 || true
+  delete_all_known_overlays
   echo "Phase 2 kind resources are down. The kind cluster was left intact."
 }
 
@@ -195,16 +444,24 @@ cmd_status() {
 cmd_proof() {
   need_cmd kubectl
   need_cmd curl
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    prepare_live_model_env
+  fi
 
-  mkdir -p "${ARTIFACT_DIR}"
+  clear_proof_outputs
   local api_pf_log="${ARTIFACT_DIR}/port-forward-api.log"
   local gateway_pf_log="${ARTIFACT_DIR}/port-forward-gateway.log"
   local jaeger_pf_log="${ARTIFACT_DIR}/port-forward-jaeger.log"
+  local llama_pf_log="${ARTIFACT_DIR}/port-forward-llama-server.log"
   local api_pf_pid=""
   local gateway_pf_pid=""
   local jaeger_pf_pid=""
+  local llama_pf_pid=""
 
   cleanup() {
+    if [[ -n "${llama_pf_pid:-}" ]]; then
+      kill "${llama_pf_pid}" >/dev/null 2>&1 || true
+    fi
     if [[ -n "${jaeger_pf_pid:-}" ]]; then
       kill "${jaeger_pf_pid}" >/dev/null 2>&1 || true
     fi
@@ -220,10 +477,16 @@ cmd_proof() {
   api_pf_pid="$(start_port_forward "svc/api" "${PHASE2_KIND_API_LOCAL_PORT}:8000" "${api_pf_log}")"
   gateway_pf_pid="$(start_port_forward "svc/gateway" "${PHASE2_KIND_GATEWAY_LOCAL_PORT}:8080" "${gateway_pf_log}")"
   jaeger_pf_pid="$(start_port_forward "svc/jaeger" "${PHASE2_KIND_JAEGER_LOCAL_PORT}:16686" "${jaeger_pf_log}")"
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    llama_pf_pid="$(start_port_forward "svc/llama-server" "${PHASE2_KIND_LLAMA_LOCAL_PORT}:8080" "${llama_pf_log}")"
+  fi
 
   wait_for_url "http://127.0.0.1:${PHASE2_KIND_API_LOCAL_PORT}/healthz"
   wait_for_url "http://127.0.0.1:${PHASE2_KIND_GATEWAY_LOCAL_PORT}/healthz"
   wait_for_url "http://127.0.0.1:${PHASE2_KIND_JAEGER_LOCAL_PORT}"
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    wait_for_url "http://127.0.0.1:${PHASE2_KIND_LLAMA_LOCAL_PORT}/health"
+  fi
 
   env \
     LLM_EXTRACTION_PLATFORM_BASE_URL="http://127.0.0.1:${PHASE2_KIND_API_LOCAL_PORT}" \
@@ -247,6 +510,36 @@ cmd_proof() {
     echo "Last Jaeger services payload:" >&2
     cat "${jaeger_services_json}" >&2
     return 1
+  fi
+
+  local runtime_dir="${ARTIFACT_DIR}/runtime"
+  mkdir -p "${runtime_dir}"
+  {
+    echo "workflow=${PHASE2_KIND_WORKFLOW}"
+    echo "backend_overlay=${BACKEND_OVERLAY}"
+    echo "gateway_kustomization=${GATEWAY_KUSTOMIZATION}"
+    echo "api_base_url=http://127.0.0.1:${PHASE2_KIND_API_LOCAL_PORT}"
+    echo "gateway_base_url=http://127.0.0.1:${PHASE2_KIND_GATEWAY_LOCAL_PORT}"
+    if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+      echo "llama_base_url=http://127.0.0.1:${PHASE2_KIND_LLAMA_LOCAL_PORT}"
+      echo "llama_model_file=${LLAMA_MODEL_FILE:-}"
+    fi
+  } > "${runtime_dir}/workflow.env"
+
+  curl -fsS \
+    -H "X-API-Key: ${PHASE2_PROOF_USER_KEY}" \
+    "http://127.0.0.1:${PHASE2_KIND_API_LOCAL_PORT}/v1/models/status" \
+    > "${runtime_dir}/models_status.json" || true
+
+  kubectl_ns logs deployment/api --tail=200 > "${runtime_dir}/backend-api.logs.txt" || true
+  kubectl_ns logs deployment/extract-worker --tail=200 > "${runtime_dir}/worker.logs.txt" || true
+  kubectl_ns logs deployment/gateway --tail=200 > "${runtime_dir}/gateway.logs.txt" || true
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    curl -fsS "http://127.0.0.1:${PHASE2_KIND_LLAMA_LOCAL_PORT}/health" \
+      > "${runtime_dir}/llama_health.json" || true
+    curl -fsS "http://127.0.0.1:${PHASE2_KIND_LLAMA_LOCAL_PORT}/v1/models" \
+      > "${runtime_dir}/llama_models.json" || true
+    kubectl_ns logs deployment/llama-server --tail=200 > "${runtime_dir}/llama-server.logs.txt" || true
   fi
 
   echo "Jaeger services captured at ${jaeger_services_json}"

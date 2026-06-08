@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extract-worker
+  namespace: llm
+spec:
+  template:
+    spec:
+      containers:
+        - name: worker
+          env:
+            - name: APP_PROFILE
+              value: "test"
+            - name: MODELS_PROFILE
+              value: "kind-live-llama"
+            - name: LLAMA_SERVER_URL
+              value: "http://llama-server:8080"

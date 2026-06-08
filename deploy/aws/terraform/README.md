@@ -1,4 +1,4 @@
-# AWS Terraform Scaffold
+# AWS Terraform Substrate
 
 This directory is the canonical Terraform root for the bounded AWS deployment slice.
 
@@ -54,7 +54,7 @@ The Terraform path is expected to preserve:
 - `NAT Gateway` disabled by default
 - environment designed for teardown after proof sessions
 
-The Terraform scaffold should also preserve the cheaper interpretation of the newer runtime requirements:
+The Terraform substrate should also preserve the cheaper interpretation of the newer runtime requirements:
 
 - keep request-level metering and rough cost attribution in the runtime and observability plane
 - keep quota, fairness, or admission control to one simple bounded rule for the first slice
@@ -62,7 +62,7 @@ The Terraform scaffold should also preserve the cheaper interpretation of the ne
 
 ## Contract Outputs And Seeds
 
-The `environments/dev/` scaffold now carries more than naming defaults.
+The `environments/dev/` substrate now carries more than naming defaults.
 
 Its exported contract should make visible:
 
@@ -94,7 +94,7 @@ At `2.3.3`, the same `environments/dev/` path also exports the provisioned subst
 
 ## Contract-Level Responsibilities
 
-At `2.3.1`, this Terraform scaffold is also expected to make room for:
+At `2.3.1`, this Terraform substrate was also expected to make room for:
 
 - provisioning identity assumptions
 - workload identity assumptions
@@ -109,7 +109,8 @@ Module intent at contract level:
 - `network`
   - encode the bounded VPC shape, public ingress posture, and no-`NAT Gateway` default
 - `ecr`
-  - keep gateway and backend image repository names stable and reviewer-readable
+  - create gateway and backend image repositories for one proof session and
+    make full teardown delete any pushed images
 - `eks`
   - encode the bounded cluster and node-group shape plus workload-identity expectations
 - `data`

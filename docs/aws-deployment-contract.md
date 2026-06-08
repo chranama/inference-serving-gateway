@@ -11,7 +11,7 @@ boundaries, request identity, runtime inspection, and teardown discipline.
 
 Current AWS work is in progress.
 
-Implemented or scaffolded surfaces:
+Implemented surfaces:
 
 - AWS-target image publication workflows for both repositories.
 - Terraform substrate path in this repository at `deploy/aws/terraform/`.
@@ -104,7 +104,7 @@ The first deployment slice uses this AWS component set:
 | Internet Gateway and route tables | Connect public subnets to the internet and define subnet routing behavior | Terraform-owned |
 | NAT Gateway | Would let private subnet workloads reach the internet without public addresses | Disabled by default |
 | Security groups | Act as AWS firewall rules for ingress, egress, and managed data access | Terraform-owned, scoped to the bounded VPC |
-| ECR | Stores CI-built container images that EKS pulls at deployment time | `inference-serving-gateway` and `llm-server` repositories |
+| ECR | Stores proof-session container images that EKS pulls at deployment time | Terraform-owned `inference-serving-gateway` and `llm-server` repositories, deleted on full teardown |
 | IAM | Defines AWS permissions for EKS, worker nodes, and GitHub Actions image publication | Terraform-owned, OIDC-based publish path |
 | EKS | Runs the Kubernetes control plane for the joint runtime | One `dev` cluster |
 | EC2 managed node group | Supplies the worker-node compute where Kubernetes pods run | One bounded node group |
@@ -188,7 +188,7 @@ The current substrate target includes:
 - public subnets for ALB and bounded node placement;
 - private subnets for managed data subnet groups;
 - optional NAT Gateway disabled by default;
-- ECR repositories for gateway and backend images;
+- ephemeral ECR repositories for gateway and backend images;
 - EKS cluster and one managed node group;
 - optional GPU managed node group for live vLLM model serving;
 - RDS PostgreSQL;
@@ -212,15 +212,16 @@ Required guardrails:
 - no WAF in the first slice;
 - NAT Gateway disabled unless a validated constraint requires it;
 - small managed data instances;
-- ECR lifecycle policies;
-- explicit teardown path.
+- ECR lifecycle policies as a fallback if a session is not destroyed promptly;
+- explicit full teardown path that deletes the ECR repositories and images.
 
 Do not add AWS services only because they look production-like. Add them only
 when they materially improve the reviewer-facing deployment proof.
 
 ## Image Publication Contract
 
-GitHub Actions owns AWS-target image publication.
+GitHub Actions owns AWS-target image publication during a live proof session.
+Terraform owns ECR repository creation and deletion.
 
 Gateway workflow:
 
@@ -233,15 +234,24 @@ Backend workflow:
 Publication rules:
 
 - platform: `linux/amd64`;
-- target: ECR;
+- target: Terraform-created ephemeral ECR repository;
 - immutable tag: `git-<sha>`;
-- dev moving tags: `main`, `aws-dev-latest`;
+- proof-session tag: `run-<github_run_id>`;
+- session moving tag: `aws-dev-latest`;
 - deploy manifests should prefer image digests or immutable `git-<sha>` tags.
 
 GitHub Actions configuration:
 
 - `vars.AWS_ROLE_TO_ASSUME` is required to publish;
-- `vars.AWS_REGION` defaults to `us-east-1`.
+- `vars.AWS_REGION` defaults to `us-east-1`;
+- publish workflows are manual and run after `terraform-apply`;
+- publish workflows refuse to push unless the target ECR repository has
+  `ephemeral=true` and `managed_by=terraform` tags.
+
+The publish workflows must not create ECR repositories. If the repository is
+missing, the correct operator action is to apply the Terraform substrate first.
+At the end of the proof session, `terraform destroy` removes the repositories
+and the pushed images.
 
 Local and `kind` workflows keep their local image tags. AWS deployment should not
 consume workstation-local images.
@@ -250,8 +260,8 @@ Image responsibilities:
 
 | Image | Owner | Used By | Weight Policy |
 |---|---|---|---|
-| `inference-serving-gateway` | Gateway repository | Gateway Deployment | Small Go edge image |
-| `llm-server` | Backend repository | Backend API, worker, migrations, seed jobs | Slim Python application image; no default Torch/Transformers/llama.cpp stack |
+| `inference-serving-gateway` | Gateway repository | Gateway Deployment | Small Go edge image pushed into ephemeral ECR |
+| `llm-server` | Backend repository | Backend API, worker, migrations, seed jobs | Slim Python application image pushed into ephemeral ECR; no default Torch/Transformers/llama.cpp stack |
 | `vllm/vllm-openai` | vLLM project | Optional vLLM model-runtime Deployment | Large model-serving image, used only by `AWS_WORKFLOW=vllm` |
 
 The application images should stay deployable on the bounded CPU node group. GPU
@@ -433,7 +443,7 @@ automation.
 The AWS deployment contract is satisfied when:
 
 - Terraform can provision the bounded substrate;
-- both repos can publish AWS-target images to ECR;
+- both repos can publish AWS-target images to Terraform-owned ephemeral ECR;
 - Kubernetes manifests deploy gateway, backend API, and worker on EKS;
 - the ALB reaches the gateway;
 - the gateway reaches the backend;
@@ -441,7 +451,7 @@ The AWS deployment contract is satisfied when:
 - one sync and one async proof run succeed through the ALB;
 - logs, metrics, and traces remain inspectable;
 - one usage/quota/cost snapshot exists for the proof key;
-- rollback or teardown is documented and exercised;
+- workload deletion and full substrate teardown are documented and exercised;
 - docs and proof artifacts match the actual deployed shape.
 
 For the vLLM workflow, satisfaction also requires:
@@ -454,9 +464,9 @@ For the vLLM workflow, satisfaction also requires:
 
 ## Implementation Gaps To Close Next
 
-1. Publish gateway and backend images into ECR.
-2. Apply the Terraform substrate for `AWS_WORKFLOW=fake`.
-3. Run the joint AWS harness through deploy, smoke, inspect, and teardown for
+1. Apply the Terraform substrate for `AWS_WORKFLOW=fake`.
+2. Publish gateway and backend images into the ephemeral ECR repositories.
+3. Run the joint AWS harness through deploy, smoke, inspect, and full teardown for
    `AWS_WORKFLOW=fake`.
 4. Enable the GPU node group and install the NVIDIA device plugin.
-5. Run deploy, smoke, inspect, and teardown for `AWS_WORKFLOW=vllm`.
+5. Run deploy, smoke, inspect, and full teardown for `AWS_WORKFLOW=vllm`.

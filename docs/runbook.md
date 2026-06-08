@@ -8,6 +8,8 @@ This guide covers local startup, verification, observation, and shutdown.
 - Python 3 for the mock upstream
 - Optional: Docker and Docker Compose for the mock Compose stack
 - Optional: `kind`, `kubectl`, and Docker for the Kubernetes-shaped local stack
+- Optional: sibling `llm-extraction-platform` checkout and a local GGUF model
+  file for the joint live kind workflow
 
 ## Make Targets
 
@@ -20,14 +22,21 @@ make proof-host
 make proof-compose
 make proof-otel
 make proof-kind-up
+make proof-kind-status
 make proof-kind
 make proof-kind-down
+make joint-kind-up
+make joint-kind-status
+make joint-kind-proof
+make joint-kind-down
 ```
 
 `make proof` runs the broad Docker Compose mock proof. `make proof-isolated`
 runs host-process, Docker Compose, and isolated OpenTelemetry proofs. The kind
-workflow is split into explicit up, proof, status, and down targets because it
-creates or reuses a local cluster.
+mock workflow is split into explicit up, proof, status, and down targets
+because it creates or reuses a local cluster. The `joint-kind-*` targets run the
+primary LLMEP plus gateway kind path with a live CPU-only `llama.cpp` model
+server in the cluster.
 
 The proof scripts check required localhost ports before starting. Override ports
 with `GATEWAY_PORT`, `UPSTREAM_PORT`, `JAEGER_PORT`,
@@ -205,13 +214,36 @@ proof/run_local_stack.sh proof
 proof/run_local_stack.sh down
 ```
 
-For a local Kubernetes-shaped stack with the companion backend:
+For the primary local Kubernetes-shaped stack with the companion backend and a
+live CPU-only `llama.cpp` model server:
 
 ```bash
-proof/run_kind_stack.sh up
-proof/run_kind_stack.sh status
-proof/run_kind_stack.sh proof
-proof/run_kind_stack.sh down
+make joint-kind-up
+make joint-kind-status
+make joint-kind-proof
+make joint-kind-down
+```
+
+This path uses the sibling LLMEP checkout, reads the backend `.env.docker`
+model settings by default, mounts `LLAMA_MODELS_DIR` into the kind control-plane
+node at `/models`, and applies LLMEP API/worker, llama-server, gateway, OTel,
+and Jaeger resources. If the `llm` kind cluster already exists without that
+mount, delete and recreate it before running the live workflow.
+
+Set `PHASE2_KIND_ENV_FILE=/path/to/env` to use a different model env file.
+Set `PHASE2_KIND_CLUSTER=llm-live` to run the live workflow in a separate
+cluster instead of recreating an existing `llm` cluster that lacks the `/models`
+mount.
+The harness preloads the third-party runtime images into kind by default; set
+`PHASE2_KIND_PRELOAD_IMAGES=0` only when you want Kubernetes to pull them from
+inside the cluster.
+
+To run the older deterministic fake-backend kind smoke variant instead:
+
+```bash
+PHASE2_KIND_WORKFLOW=fake proof/run_kind_stack.sh up
+PHASE2_KIND_WORKFLOW=fake proof/run_kind_stack.sh proof
+PHASE2_KIND_WORKFLOW=fake proof/run_kind_stack.sh down
 ```
 
 ## Common Checks

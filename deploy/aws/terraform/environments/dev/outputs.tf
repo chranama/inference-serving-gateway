@@ -4,7 +4,7 @@ output "aws_contract" {
 }
 
 output "cost_guardrails" {
-  description = "Current first-slice cost controls encoded into the Terraform scaffold."
+  description = "Current first-slice cost controls encoded into the Terraform substrate."
   value = {
     single_region            = true
     environment              = var.environment

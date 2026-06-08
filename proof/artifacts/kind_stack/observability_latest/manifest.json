@@ -35,7 +35,7 @@
     "sync_request_id": "integration-obs-request-1",
     "async_submit_request_id": "integration-obs-request-2",
     "async_poll_request_id": "integration-obs-request-3",
-    "async_job_id": "e88f8071af80403ea58a956d01f18c61"
+    "async_job_id": "dbd7e4b1aeda4f98b864a0c7787b416f"
   },
   "artifacts": {
     "gateway_metrics": "gateway.metrics.txt",
@@ -71,7 +71,7 @@
     },
     "async_logs": {
       "trace_id": "integration-obs-trace-2",
-      "job_id": "e88f8071af80403ea58a956d01f18c61"
+      "job_id": "dbd7e4b1aeda4f98b864a0c7787b416f"
     },
     "async_poll_logs": {
       "request_id": "integration-obs-request-3",
@@ -131,9 +131,10 @@
     "extract.accepted",
     "extract.model_resolved",
     "extract.cache_lookup",
+    "extract_job.status_polled",
+    "extract_job.status_polled",
     "extract.generate_completed",
     "extract.validation_completed",
-    "extract_job.status_polled",
     "extract.cache_written",
     "extract.logged",
     "extract.completed",

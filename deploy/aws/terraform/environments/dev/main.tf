@@ -92,7 +92,7 @@ module "ecr" {
 
   gateway_repository_name = var.gateway_ecr_repository_name
   backend_repository_name = var.backend_ecr_repository_name
-  force_delete            = var.ephemeral_environment
+  force_delete            = true
   tags                    = local.default_tags
 }
 

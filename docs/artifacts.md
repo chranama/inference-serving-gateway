@@ -123,13 +123,14 @@ and enforce representative gateway-owned controls.
 ## Backend Integration Artifacts
 
 Generate these artifacts through the runbook's local backend or integrated
-`kind` workflow.
+`kind` workflows.
 
 Output directories:
 
 ```text
 proof/artifacts/llm_extraction_platform/observability_latest/
 proof/artifacts/kind_stack/observability_latest/
+proof/artifacts/kind_stack/runtime/
 ```
 
 Representative files:
@@ -145,9 +146,17 @@ Representative files:
 - `sync_logs.json`
 - `async_logs.json`
 - `async_poll_logs.json`
+- `models_status.json`
+- `llama_health.json`
+- `llama_models.json`
+- `llama-server.logs.txt`
 
 These artifacts show gateway/backend correlation for sync and async extraction
-flows when the companion backend stack is available.
+flows when the companion backend stack is available. In the promoted live kind
+workflow, they also capture the live model-server state, LLMEP model status,
+and llama-server logs so the artifact set demonstrates that the Kubernetes path
+used a real CPU-only `llama.cpp` backend rather than the fake deterministic
+profile.
 
 ## Interpretation Limits
 

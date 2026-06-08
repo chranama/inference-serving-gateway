@@ -157,6 +157,7 @@ data "aws_iam_policy_document" "github_actions_ecr_publish" {
       "ecr:DescribeImages",
       "ecr:DescribeRepositories",
       "ecr:InitiateLayerUpload",
+      "ecr:ListTagsForResource",
       "ecr:PutImage",
       "ecr:UploadLayerPart",
     ]

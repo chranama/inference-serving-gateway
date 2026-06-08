@@ -49,6 +49,12 @@ That workflow starts LLMEP, the async worker, local infrastructure, optional
 observability services, and this gateway as one stack. It also writes the joint
 proof artifact bundle from the backend side.
 
+The promoted local Kubernetes-shaped joint workflow runs LLMEP API/worker,
+llama-server, this gateway, OTel, and Jaeger in a kind cluster. It uses a
+host-mounted GGUF model with CPU-only `llama.cpp`, so it proves local
+Kubernetes deployability and real model-backed extraction through the gateway
+without claiming accelerated inference or production throughput.
+
 ## Gateway-Side Helpers
 
 The gateway runbook keeps helper paths for isolated gateway review and for
@@ -66,6 +72,7 @@ The gateway-side backend integration scripts write artifacts under:
 
 - `proof/artifacts/llm_extraction_platform/observability_latest/`
 - `proof/artifacts/kind_stack/observability_latest/`
+- `proof/artifacts/kind_stack/runtime/`
 
 Representative files:
 
@@ -79,9 +86,12 @@ Representative files:
 - `async_logs.json`
 - `manifest.json`
 - `summary.md`
+- `models_status.json`
+- `llama_health.json`
+- `llama-server.logs.txt`
 
 These artifacts show request identity, trace identity, gateway/backend metrics,
-and sync plus async execution visibility from one run.
+sync plus async execution visibility, and live model-server state from one run.
 
 ## Current Limit
 

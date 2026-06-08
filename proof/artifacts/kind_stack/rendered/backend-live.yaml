@@ -1,0 +1,618 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: llm
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: policy-runner
+  namespace: llm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: policy-runner
+  namespace: llm
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: policy-runner
+  namespace: llm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: policy-runner
+subjects:
+- kind: ServiceAccount
+  name: policy-runner
+  namespace: llm
+---
+apiVersion: v1
+data:
+  LLAMA_BATCH: "256"
+  LLAMA_CTX_SIZE: "4096"
+  LLAMA_MLOCK: "1"
+  LLAMA_MODEL_FILE: "/models/smollm2-360m-instruct/Q8_0.gguf"
+  LLAMA_N_GPU_LAYERS: "0"
+  LLAMA_NO_MMAP: "1"
+  LLAMA_PARALLEL: "1"
+  LLAMA_SEED: "0"
+  LLAMA_SERVER_PORT: "8080"
+  LLAMA_TEMP: "0.7"
+  LLAMA_THREADS: "8"
+  LLAMA_TOP_P: "0.95"
+  LLAMA_UBATCH: ""
+kind: ConfigMap
+metadata:
+  name: llama-runtime-config
+  namespace: llm
+---
+apiVersion: v1
+data:
+  server.yaml: |-
+    service:
+      name: "llm-extraction-platform"
+      version: "0.1.0"
+      debug: false
+      env: "dev"
+
+    server:
+      host: "0.0.0.0"
+      port: 8000
+
+    # Database: in-cluster DNS name from postgres Service
+    database:
+      url: "postgresql+asyncpg://llm:llm@postgres:5432/llm"
+
+    # Redis: in-cluster DNS name from redis Service
+    redis:
+      enabled: true
+      url: "redis://redis:6379/0"
+
+    # Model policy defaults (safe for dev)
+    model:
+      # keep aligned with config/models.yaml you mount or bake into image
+      default_id: "meta-llama/Llama-3.2-1B-Instruct"
+      dtype: "float16"
+      device: "cpu"
+      # your backend uses env vars for this too
+      # (kept here for clarity/documentation)
+      load_mode: "off"
+
+    limits:
+      rate_limit_rpm:
+        admin: 0
+        default: 120
+        free: 60
+      quota_auto_reset_days: 30
+
+    cache:
+      api_key_cache_ttl_seconds: 10
+kind: ConfigMap
+metadata:
+  name: llm-config
+  namespace: llm
+---
+apiVersion: v1
+data:
+  models.yaml: |+
+    base:
+      default_model: llama.cpp/SmolLM2-360M-Instruct-Q8_0-GGUF
+      defaults:
+        backend: llamacpp
+        load_mode: lazy
+        readiness_mode: probe
+        deployment_key: kind-live-llama--smollm2-360m-q8
+        deployment:
+          profile_id: kind-live-llama
+          models_profile: kind-live-llama
+          expected:
+            in_kubernetes: true
+            accelerator: "cpu"
+            precision: "int8"
+        capabilities:
+          generate: true
+          extract: true
+        assessment:
+          lane: kind-live-llama
+          policy_schema: policy_decision_v2
+          require_for_extract: false
+          assessed: true
+        backend_constraints:
+          llamacpp_model_selector: "fixed"
+        llamacpp:
+          server_url: http://llama-server:8080
+          timeout_seconds: 60
+          connect_timeout_seconds: 5
+          default_temperature: 0.0
+          default_top_p: 1.0
+      models: []
+
+    profiles:
+      kind-live-llama:
+        default_model: llama.cpp/SmolLM2-360M-Instruct-Q8_0-GGUF
+        defaults:
+          backend: llamacpp
+          load_mode: lazy
+          readiness_mode: probe
+          deployment_key: kind-live-llama--smollm2-360m-q8
+          deployment:
+            profile_id: kind-live-llama
+            models_profile: kind-live-llama
+            expected:
+              in_kubernetes: true
+              accelerator: "cpu"
+              precision: "int8"
+          capabilities:
+            generate: true
+            extract: true
+          assessment:
+            lane: kind-live-llama
+            policy_schema: policy_decision_v2
+            require_for_extract: false
+            assessed: true
+          backend_constraints:
+            llamacpp_model_selector: "fixed"
+          llamacpp:
+            server_url: http://llama-server:8080
+            timeout_seconds: 60
+            connect_timeout_seconds: 5
+            default_temperature: 0.0
+            default_top_p: 1.0
+        models:
+          - id: llama.cpp/SmolLM2-360M-Instruct-Q8_0-GGUF
+            backend: llamacpp
+            load_mode: lazy
+            readiness_mode: probe
+            deployment_key: kind-live-llama--smollm2-360m-q8
+            backend_constraints:
+              llamacpp_model_selector: "fixed"
+            llamacpp:
+              server_url: http://llama-server:8080
+              timeout_seconds: 60
+              connect_timeout_seconds: 5
+              model_name: "SmolLM2-360M-Instruct"
+              default_temperature: 0.0
+              default_top_p: 1.0
+            capabilities:
+              generate: true
+              extract: true
+            assessment:
+              assessed: true
+              status: allowed
+              assessed_by: local_kind_live_llama_path
+            deployment:
+              expected:
+                in_kubernetes: true
+                accelerator: "cpu"
+                precision: "int8"
+            notes: "Local kind live-model path: CPU-only llama.cpp SmolLM2 runtime behind the API and gateway."
+
+kind: ConfigMap
+metadata:
+  name: llm-models
+  namespace: llm
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: llm-secrets
+  namespace: llm
+stringData:
+  API_KEY: ""
+  DATABASE_URL: postgresql+asyncpg://llm:llm@postgres:5432/llm
+  HF_TOKEN: ""
+  POSTGRES_DB: llm
+  POSTGRES_PASSWORD: llm
+  POSTGRES_USER: llm
+  REDIS_URL: redis://redis:6379/0
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: llm
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+  selector:
+    app: api
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llama-server
+  namespace: llm
+spec:
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: llama-server
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: llm
+spec:
+  ports:
+  - name: pg
+    port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: llm
+spec:
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - env:
+        - name: APP_PROFILE
+          value: test
+        - name: MODELS_PROFILE
+          value: kind-live-llama
+        - name: MODELS_YAML
+          value: /app/models/models.yaml
+        - name: SCHEMAS_DIR
+          value: /app/schemas/model_output
+        - name: EDGE_MODE
+          value: behind_gateway
+        - name: OTEL_ENABLED
+          value: "1"
+        - name: OTEL_SERVICE_NAME
+          value: llm-extraction-platform
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://otel-collector:4318/v1/traces
+        - name: MODEL_LOAD_MODE
+          value: lazy
+        - name: REQUIRE_MODEL_READY
+          value: "0"
+        - name: LLAMA_SERVER_URL
+          value: http://llama-server:8080
+        - name: ENV
+          value: dev
+        - name: DEBUG
+          value: "true"
+        - name: APP_CONFIG_PATH
+          value: /app/config/server.yaml
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: DATABASE_URL
+              name: llm-secrets
+        - name: REDIS_ENABLED
+          value: "true"
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              key: REDIS_URL
+              name: llm-secrets
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: HF_TOKEN
+              name: llm-secrets
+        - name: HF_HOME
+          value: /root/.cache/huggingface
+        - name: APP_ROOT
+          value: /app
+        image: llm-server:dev
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 6
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 2
+        name: api
+        ports:
+        - containerPort: 8000
+        readinessProbe:
+          failureThreshold: 12
+          httpGet:
+            path: /readyz
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 2
+        startupProbe:
+          failureThreshold: 60
+          httpGet:
+            path: /healthz
+            port: 8000
+          periodSeconds: 2
+          timeoutSeconds: 2
+        volumeMounts:
+        - mountPath: /app/config
+          name: llm-config
+          readOnly: true
+        - mountPath: /app/models
+          name: llm-models
+          readOnly: true
+      volumes:
+      - configMap:
+          items:
+          - key: server.yaml
+            path: server.yaml
+          name: llm-config
+        name: llm-config
+      - configMap:
+          items:
+          - key: models.yaml
+            path: models.yaml
+          name: llm-models
+        name: llm-models
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama-server
+  namespace: llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llama-server
+  template:
+    metadata:
+      labels:
+        app: llama-server
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: llama-runtime-config
+        image: llmep-llama-server:b8069
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /app/healthcheck.sh
+          failureThreshold: 12
+          initialDelaySeconds: 30
+          periodSeconds: 20
+          timeoutSeconds: 5
+        name: llama-server
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          exec:
+            command:
+            - /app/healthcheck.sh
+          failureThreshold: 60
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: "4"
+            memory: 8Gi
+          requests:
+            cpu: "1"
+            memory: 1Gi
+        volumeMounts:
+        - mountPath: /models
+          name: llama-models
+          readOnly: true
+      volumes:
+      - hostPath:
+          path: /models
+          type: Directory
+        name: llama-models
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              key: POSTGRES_USER
+              name: llm-secrets
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: POSTGRES_PASSWORD
+              name: llm-secrets
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              key: POSTGRES_DB
+              name: llm-secrets
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        image: postgres:16-alpine
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -lc
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        name: postgres
+        ports:
+        - containerPort: 5432
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -lc
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 3
+          periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - args:
+        - redis-server
+        - --save
+        - ""
+        - --appendonly
+        - "no"
+        image: redis:7-alpine
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -lc
+            - redis-cli ping | grep PONG
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        name: redis
+        ports:
+        - containerPort: 6379
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -lc
+            - redis-cli ping | grep PONG
+          initialDelaySeconds: 3
+          periodSeconds: 5
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: llm
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: db-migrate
+    spec:
+      containers:
+      - command:
+        - sh
+        - -lc
+        - |
+          set -euo pipefail
+
+          echo "Waiting for database readiness..."
+          for i in $(seq 1 60); do
+            if python -c "import socket; s = socket.create_connection(('postgres', 5432), 5); s.close()"; then
+              echo "ok"
+              break
+            fi
+            sleep 2
+          done
+
+          echo "Running alembic migrations..."
+          python -m alembic -c /app/server/alembic.ini upgrade head
+        env:
+        - name: ENV
+          value: dev
+        - name: APP_ROOT
+          value: /app
+        - name: APP_CONFIG_PATH
+          value: /app/config/server.yaml
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: DATABASE_URL
+              name: llm-secrets
+        - name: REDIS_ENABLED
+          value: "false"
+        image: llm-server:dev
+        imagePullPolicy: IfNotPresent
+        name: migrate
+        volumeMounts:
+        - mountPath: /app/config
+          name: llm-config
+          readOnly: true
+      restartPolicy: Never
+      volumes:
+      - configMap:
+          items:
+          - key: server.yaml
+            path: server.yaml
+          name: llm-config
+        name: llm-config
+  ttlSecondsAfterFinished: 3600

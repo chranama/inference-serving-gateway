@@ -10,14 +10,14 @@ variable "backend_repository_name" {
 
 variable "force_delete" {
   type        = bool
-  description = "Whether repositories may be deleted even when they still contain images."
-  default     = false
+  description = "Whether repositories may be deleted even when they still contain proof-session images."
+  default     = true
 }
 
 variable "image_retention_count" {
   type        = number
-  description = "How many tagged images to retain in each bounded repository."
-  default     = 25
+  description = "How many tagged images to retain if a proof-session repository is not immediately destroyed."
+  default     = 5
 }
 
 variable "tags" {

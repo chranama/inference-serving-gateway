@@ -156,7 +156,7 @@ proof/run_aws_stack.sh terraform-plan
 Review the plan before applying. The expected substrate is:
 
 - VPC and subnets.
-- ECR repositories for both images.
+- Ephemeral ECR repositories for both application images.
 - IAM roles for EKS, worker nodes, and GitHub Actions image publication.
 - EKS cluster and bounded managed node group.
 - Optional GPU managed node group for `AWS_WORKFLOW=vllm`.
@@ -170,6 +170,8 @@ proof/run_aws_stack.sh terraform-apply
 ```
 
 This starts billable AWS resources. Keep the environment short-lived.
+The ECR repositories are created as part of this substrate and are expected to
+exist only for the proof session.
 
 ### 4. Configure Kubernetes Access
 
@@ -184,9 +186,14 @@ Set both GitHub repository variables:
 - `AWS_REGION=us-east-1`
 - `AWS_ROLE_TO_ASSUME=<terraform iam_summary.github_actions_role_arn>`
 
-Run the AWS image-publish workflow in both repositories, then deploy with the
-published ECR images. If `GATEWAY_IMAGE` and `BACKEND_IMAGE` are unset, the
-harness uses each ECR repository's `aws-dev-latest` tag from Terraform output.
+Run the manual AWS image-publish workflow in both repositories after
+`terraform-apply`. The workflows refuse to publish unless the target ECR
+repository exists and is tagged as a Terraform-owned ephemeral repository.
+
+If `GATEWAY_IMAGE` and `BACKEND_IMAGE` are unset, the harness uses each
+ephemeral ECR repository's `aws-dev-latest` tag from Terraform output. For a
+more exact proof, set those variables to the `git-<sha>` or `run-<id>` tags
+reported by the workflow artifacts.
 
 ### 6. Install AWS Add-Ons
 
@@ -307,7 +314,8 @@ proof/run_aws_stack.sh delete-workloads
 ```
 
 This removes Kubernetes workloads and the runtime secret but keeps the AWS
-substrate.
+substrate, including ECR repositories and pushed images. Use this only for
+inspection or before a same-session redeploy.
 
 ### 13. Destroy The Substrate
 
@@ -315,14 +323,15 @@ substrate.
 proof/run_aws_stack.sh terraform-destroy
 ```
 
-This is the expected cleanup path for the first proof slice.
+This is the expected cleanup path for the first proof slice. It deletes the
+Terraform-owned ECR repositories and the images pushed for the proof session.
 
 ## Acceptance
 
 The proof is acceptable when:
 
 - Terraform provisions the bounded substrate.
-- Both images are available in ECR.
+- Both images are available in the ephemeral ECR repositories.
 - ALB reaches the gateway.
 - Gateway reaches the backend API.
 - Sync extract succeeds through the ALB.
@@ -330,7 +339,8 @@ The proof is acceptable when:
 - RDS and Redis are used by the backend.
 - Logs and metrics are inspectable.
 - CloudWatch log inventory or correlated events are captured.
-- The stack can be deleted or destroyed cleanly.
+- Workloads can be deleted for inspection, and the full substrate can be
+  destroyed cleanly at the end of the proof session.
 
 For `AWS_WORKFLOW=vllm`, the proof is acceptable only when the GPU node group is
 present, the NVIDIA device plugin is installed, vLLM becomes ready, and extract
