@@ -7,7 +7,9 @@ Planning reference:
 - `/Users/chranama/career/job-search/audit/2026-03-28__phase2-3-aws-deployment-slice-implementation-plan.md`
 - `/Users/chranama/career/inference-serving-gateway/docs/aws-deployment-contract.md`
 
-At `2.3.1`, this path is still scaffold-only, but the scaffold now carries contract obligations rather than only placeholders.
+This path now carries the gateway-owned AWS/EKS manifests for the first bounded
+AWS slice. The backend-owned AWS overlay lives in the sibling
+`llm-extraction-platform` repository.
 
 ## Contract Responsibilities
 
@@ -38,17 +40,13 @@ Even before manifests land, this path should make room for the inputs the first 
 - one gateway or backend metrics view that can be read against the seeded thresholds
 - one usage or rough-cost snapshot tied to the bounded `api_key` scope
 
-## Expected Future Contents
+## Contents
 
-- gateway deployment/service adjustments for AWS
-- ingress resources
-- bounded observability add-ons that belong to the integrated stack rather than the backend overlay alone
-- bounded cloud log-path assumptions for correlated inspection
-- smoke and inspection workflow assumptions for the gateway-led AWS slice
-- config/secrets materialization assumptions that belong to the integrated path
-- notes about how gateway-visible rejects surface quota, admission, or fairness controls from the backend side
+- `kustomization.yaml`: gateway-owned AWS overlay.
+- `gateway-ingress.yaml`: ALB ingress entry point.
+- `gateway-patch.yaml`: AWS runtime settings for gateway routing, admission, and tracing.
+- `observability-patch.yaml`: bounded resource settings for in-cluster OTel and Jaeger.
 
-## 2.3.1 Done Means
+The AWS runbook renders this path together with the backend overlay:
 
-This path does not need a full deployable manifest set yet.
-It does need to stop hiding which operator workflow and proof inputs later slices are expected to preserve.
+- `/Users/chranama/career/inference-serving-gateway/docs/aws-runbook.md`

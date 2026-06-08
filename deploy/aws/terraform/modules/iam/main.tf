@@ -71,6 +71,7 @@ resource "aws_iam_role_policy_attachment" "eks_node" {
       "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
       "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly",
       "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+      "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
     ],
   )
 

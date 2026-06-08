@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: llm
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        runtime-slice: aws-dev
+    spec:
+      containers:
+        - name: gateway
+          imagePullPolicy: Always
+          env:
+            - name: GATEWAY_LISTEN_ADDR
+              value: ":8080"
+            - name: GATEWAY_UPSTREAM_BASE_URL
+              value: "http://api:8000"
+            - name: GATEWAY_REQUEST_TIMEOUT
+              value: "30s"
+            - name: GATEWAY_ENABLE_METRICS
+              value: "true"
+            - name: GATEWAY_OTEL_ENABLED
+              value: "true"
+            - name: GATEWAY_OTEL_SERVICE_NAME
+              value: "inference-serving-gateway"
+            - name: GATEWAY_OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector:4318/v1/traces"
+            - name: GATEWAY_ALLOW_EXTRACT
+              value: "true"
+            - name: GATEWAY_ALLOW_EXTRACT_JOBS
+              value: "true"
+            - name: GATEWAY_ALLOW_JOB_STATUS
+              value: "true"
+            - name: GATEWAY_MAX_BODY_BYTES
+              value: "1048576"
+            - name: GATEWAY_CONCURRENCY_LIMIT
+              value: "32"
+            - name: GATEWAY_RATE_LIMIT_PER_SECOND
+              value: "2"
+            - name: GATEWAY_RATE_LIMIT_BURST
+              value: "4"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

@@ -17,6 +17,7 @@ tests, local operation, artifacts, or scope boundaries.
 - [Runbook](runbook.md): start, verify, observe, and shut down local workflows.
 - [Artifacts](artifacts.md): generated runtime artifacts and how to interpret them.
 - [AWS Deployment Contract](aws-deployment-contract.md): bounded joint AWS deployment contract.
+- [AWS Runbook](aws-runbook.md): provision, deploy, smoke, inspect, and destroy the bounded AWS slice.
 - [Scope](scope.md): current claims, non-claims, and known limits.
 
 Archived documentation lives in [`../archive/docs/`](../archive/docs/). Treat it

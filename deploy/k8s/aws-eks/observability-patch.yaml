@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: llm
+spec:
+  template:
+    metadata:
+      labels:
+        runtime-slice: aws-dev
+    spec:
+      containers:
+        - name: otel-collector
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: llm
+spec:
+  template:
+    metadata:
+      labels:
+        runtime-slice: aws-dev
+    spec:
+      containers:
+        - name: jaeger
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

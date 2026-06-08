@@ -6,5 +6,9 @@ tmp/
 *.test
 *.out
 **/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/tfplan
 proof/runtime/local_stack/
+proof/artifacts/aws_stack/
 proof/artifacts/kind_stack/port-forward-*.log

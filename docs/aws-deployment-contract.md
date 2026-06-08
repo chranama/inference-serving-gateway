@@ -15,14 +15,16 @@ Implemented or scaffolded surfaces:
 
 - AWS-target image publication workflows for both repositories.
 - Terraform substrate path in this repository at `deploy/aws/terraform/`.
-- AWS/EKS add-on path in this repository at `deploy/k8s/aws-eks/`.
+- AWS/EKS gateway overlay path in this repository at `deploy/k8s/aws-eks/`.
 - Backend-specific AWS overlay path in the backend repository at
   `deploy/k8s/overlays/aws-eks/`.
+- Joint AWS harness at `proof/run_aws_stack.sh`.
 
 Still pending:
 
-- deployable AWS/EKS Kubernetes manifests;
-- AWS ingress, secrets/config materialization, and cloud log wiring;
+- live AWS account preflight, budget setup, and credentials;
+- AWS image publication into ECR;
+- AWS Load Balancer Controller and CloudWatch Observability add-on execution;
 - deployed smoke, inspection, rollback, and teardown proof artifacts.
 
 ## Deployment Objective
@@ -400,10 +402,8 @@ The AWS deployment contract is satisfied when:
 
 ## Implementation Gaps To Close Next
 
-1. Commit or finish the AWS image-publish workflows.
-2. Validate and commit the Terraform substrate.
-3. Add AWS/EKS manifests for gateway ingress and observability add-ons.
-4. Add backend AWS overlay manifests for API, worker, migration, config, and
-   managed data wiring.
-5. Add a joint AWS proof harness that captures ALB smoke, async completion,
-   logs, metrics, traces, usage, and teardown evidence.
+1. Configure live AWS credentials and billing guardrails.
+2. Apply the Terraform substrate.
+3. Publish gateway and backend images into ECR.
+4. Install AWS Load Balancer Controller and CloudWatch Observability.
+5. Run the joint AWS harness through deploy, smoke, inspect, and teardown.

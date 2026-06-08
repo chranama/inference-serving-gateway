@@ -1,4 +1,4 @@
-.PHONY: fmt test run build proof proof-host proof-compose proof-otel proof-kind-up proof-kind-status proof-kind proof-kind-down proof-isolated
+.PHONY: fmt test run build proof proof-host proof-compose proof-otel proof-kind-up proof-kind-status proof-kind proof-kind-down proof-isolated aws-preflight aws-render aws-status aws-smoke aws-inspect
 
 fmt:
 	find . -name '*.go' -not -path './vendor/*' -print0 | xargs -0 gofmt -w
@@ -37,3 +37,18 @@ proof-kind-down:
 	proof/run_mock_kind_stack.sh down
 
 proof-isolated: proof-host proof-compose proof-otel
+
+aws-preflight:
+	proof/run_aws_stack.sh preflight
+
+aws-render:
+	proof/run_aws_stack.sh render
+
+aws-status:
+	proof/run_aws_stack.sh status
+
+aws-smoke:
+	proof/run_aws_stack.sh smoke
+
+aws-inspect:
+	proof/run_aws_stack.sh inspect
