@@ -233,7 +233,7 @@ terraform_apply() {
 
 terraform_destroy() {
   need_cmd terraform
-  terraform -chdir="${TF_DIR}" destroy
+  terraform -chdir="${TF_DIR}" destroy -auto-approve
 }
 
 kubeconfig() {
@@ -321,6 +321,9 @@ install_gpu_device_plugin() {
 
   log "installing or updating NVIDIA Kubernetes device plugin"
   kubectl apply -f "https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.17.1/deployments/static/nvidia-device-plugin.yml"
+  kubectl -n kube-system patch daemonset nvidia-device-plugin-daemonset --type=json \
+    -p='[{"op":"add","path":"/spec/template/spec/tolerations/-","value":{"key":"workload","operator":"Equal","value":"model-runtime","effect":"NoSchedule"}}]' \
+    >/dev/null
   kubectl -n kube-system rollout status daemonset/nvidia-device-plugin-daemonset --timeout=180s
 }
 
@@ -554,7 +557,7 @@ smoke() {
     "${CURL_RESOLVE_ARGS[@]}" \
     "${base_url}/healthz" > "${smoke_dir}/health.status"
 
-  payload='{"schema_id":"sroie_receipt_v1","text":"Vendor: ACME\nTotal: 10.00","cache":false,"repair":true}'
+  payload='{"schema_id":"sroie_receipt_v1","text":"Company: ACME\nDate: 2024-01-01\nTotal: 10.00\nAddress: 123 Main St","temperature":0.0,"max_new_tokens":256,"cache":false,"repair":true}'
 
   curl_json "POST" "${base_url}/v1/extract" "${PROOF_USER_KEY}" "${payload}" "${smoke_dir}/sync_extract"
   sync_status="$(cat "${smoke_dir}/sync_extract.status")"
