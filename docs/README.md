@@ -18,6 +18,8 @@ tests, local operation, artifacts, or scope boundaries.
 - [Artifacts](artifacts.md): generated runtime artifacts and how to interpret them.
 - [AWS Deployment Contract](aws-deployment-contract.md): bounded joint AWS deployment contract.
 - [AWS Runbook](aws-runbook.md): provision, deploy, smoke, inspect, and destroy the bounded AWS slice.
+- [LLMEP Runtime Setup](https://github.com/chranama/llm-extraction-platform/blob/main/docs/runtime-setup.md): canonical local hardware, model, and AWS prep requirements for the combined system.
+- [LLMEP API And Model Runtime Evolution](https://github.com/chranama/llm-extraction-platform/blob/main/docs/decisions/api-model-runtime-evolution.md): decision note for the API/model-serving boundary.
 - [Scope](scope.md): current claims, non-claims, and known limits.
 
 Archived documentation lives in [`../archive/docs/`](../archive/docs/). Treat it

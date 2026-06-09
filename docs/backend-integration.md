@@ -46,8 +46,9 @@ The canonical LLMEP plus gateway workflow is owned by the backend repository:
 - [LLMEP: Inference Gateway Integration](https://github.com/chranama/llm-extraction-platform/blob/main/docs/inference-gateway-integration.md)
 
 That workflow starts LLMEP, the async worker, local infrastructure, optional
-observability services, and this gateway as one stack. It also writes the joint
-proof artifact bundle from the backend side.
+observability services, and this gateway as one stack. The promoted local path
+smokes the live kind deployment without writing proof artifacts; the explicit
+evidence workflow writes the joint proof artifact bundle from the backend side.
 
 The promoted local Kubernetes-shaped joint workflow runs LLMEP API/worker,
 llama-server, this gateway, OTel, and Jaeger in a kind cluster. It uses a
@@ -57,8 +58,9 @@ without claiming accelerated inference or production throughput.
 
 ## Gateway-Side Helpers
 
-The gateway runbook keeps helper paths for isolated gateway review and for
-probing an already running backend:
+The gateway runbook keeps helper paths for isolated gateway review, the
+non-artifact live kind smoke path, and probes against an already running
+backend:
 
 - [Runbook: Backend Integration](runbook.md#backend-integration-stack)
 

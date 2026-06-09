@@ -4,6 +4,10 @@ The repository keeps saved runtime artifacts for host, Docker Compose, isolated
 OpenTelemetry, isolated `kind`, and backend-integrated runs. They are useful
 for inspecting behavior without rerunning every local stack.
 
+The promoted combined local walkthrough is the non-artifact live kind smoke in
+the runbook. Use the artifact workflows when you need saved evidence for review,
+CI validation, or before/after comparison.
+
 ## What To Inspect First
 
 - `summary.md`: human-readable run summary and validated expectations.

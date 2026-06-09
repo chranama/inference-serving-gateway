@@ -41,13 +41,13 @@ observing, and shutting down the gateway:
 
 - [Runbook](docs/runbook.md)
 
-It covers mock upstream startup, gateway startup, health checks, artifact
-generation, Docker Compose proof, isolated OpenTelemetry proof, isolated
-Kubernetes proof, gateway-side backend integration helpers, Kubernetes-shaped
-backend-integrated runs, and cleanup. The canonical combined LLMEP plus gateway
-workflow lives in the backend repository:
+It covers the promoted live kind path, mock upstream startup, gateway startup,
+health checks, Docker Compose proof, isolated OpenTelemetry proof, isolated
+Kubernetes proof, gateway-side backend integration helpers, and cleanup. The
+canonical combined LLMEP plus gateway workflow lives in the backend repository:
 
 - [LLMEP Inference Gateway Integration](https://github.com/chranama/llm-extraction-platform/blob/main/docs/inference-gateway-integration.md)
+- [LLMEP Runtime Setup](https://github.com/chranama/llm-extraction-platform/blob/main/docs/runtime-setup.md)
 
 ## Documentation
 

@@ -18,6 +18,7 @@ REDIS_IMAGE_TAG="${REDIS_IMAGE:-redis:7-alpine}"
 OTEL_COLLECTOR_IMAGE_TAG="${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.122.1}"
 JAEGER_IMAGE_TAG="${JAEGER_IMAGE:-jaegertracing/all-in-one:1.62.0}"
 ARTIFACT_DIR="${SCRIPT_DIR}/artifacts/kind_stack"
+RUNTIME_DIR="${GATEWAY_REPO_ROOT}/tmp/kind_stack"
 
 : "${PHASE2_KIND_WORKFLOW:=live}"
 : "${PHASE2_KIND_CLUSTER:=llm}"
@@ -53,6 +54,7 @@ Usage:
   proof/run_kind_stack.sh up
   proof/run_kind_stack.sh down
   proof/run_kind_stack.sh status
+  proof/run_kind_stack.sh smoke
   proof/run_kind_stack.sh proof
 
 This is the primary local Kubernetes-shaped path. By default it runs the
@@ -63,6 +65,9 @@ live-model workflow:
 Live mode mounts LLAMA_MODELS_DIR from the host into the kind node at /models and
 runs a CPU-only llama.cpp model runtime in the cluster. Use
 PHASE2_KIND_WORKFLOW=fake for the older deterministic fake-backend kind smoke.
+
+The smoke command verifies the running stack without writing proof artifacts.
+The proof command generates the review evidence bundle under proof/artifacts/.
 EOF
 }
 
@@ -70,8 +75,10 @@ clear_proof_outputs() {
   mkdir -p "${ARTIFACT_DIR}"
   rm -rf \
     "${ARTIFACT_DIR}/observability_latest" \
-    "${ARTIFACT_DIR}/runtime"
+    "${ARTIFACT_DIR}/runtime" \
+    "${ARTIFACT_DIR}/rendered"
   rm -f \
+    "${ARTIFACT_DIR}/kind-config.live.yaml" \
     "${ARTIFACT_DIR}/jaeger-services.json" \
     "${ARTIFACT_DIR}/port-forward-api.log" \
     "${ARTIFACT_DIR}/port-forward-gateway.log" \
@@ -176,8 +183,8 @@ prepare_live_model_env() {
 }
 
 write_live_kind_config() {
-  mkdir -p "${ARTIFACT_DIR}"
-  local generated="${ARTIFACT_DIR}/kind-config.live.yaml"
+  mkdir -p "${RUNTIME_DIR}"
+  local generated="${RUNTIME_DIR}/kind-config.live.yaml"
   cat > "${generated}" <<EOF
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -363,10 +370,21 @@ sys.stdout.write(text)
 }
 
 apply_backend_overlay() {
-  mkdir -p "${ARTIFACT_DIR}/rendered"
-  local rendered="${ARTIFACT_DIR}/rendered/backend-${PHASE2_KIND_WORKFLOW}.yaml"
+  mkdir -p "${RUNTIME_DIR}/rendered"
+  local rendered="${RUNTIME_DIR}/rendered/backend-${PHASE2_KIND_WORKFLOW}.yaml"
   render_backend_overlay > "${rendered}"
   kubectl apply -f "${rendered}"
+}
+
+copy_runtime_outputs_to_artifacts() {
+  mkdir -p "${ARTIFACT_DIR}"
+  if [[ -f "${RUNTIME_DIR}/kind-config.live.yaml" ]]; then
+    cp "${RUNTIME_DIR}/kind-config.live.yaml" "${ARTIFACT_DIR}/kind-config.live.yaml"
+  fi
+  if [[ -d "${RUNTIME_DIR}/rendered" ]]; then
+    mkdir -p "${ARTIFACT_DIR}/rendered"
+    cp -R "${RUNTIME_DIR}/rendered/." "${ARTIFACT_DIR}/rendered/"
+  fi
 }
 
 apply_gateway_overlay() {
@@ -387,7 +405,7 @@ cmd_up() {
   need_cmd curl
   ensure_docker_ready
 
-  mkdir -p "${ARTIFACT_DIR}"
+  mkdir -p "${RUNTIME_DIR}"
   if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
     prepare_live_model_env
   fi
@@ -418,7 +436,8 @@ cmd_up() {
   echo "Backend overlay: ${BACKEND_OVERLAY}"
   echo "Integrated add-ons: ${GATEWAY_KUSTOMIZATION}"
   echo "Jaeger UI: kubectl -n ${PHASE2_KIND_NAMESPACE} port-forward svc/jaeger ${PHASE2_KIND_JAEGER_LOCAL_PORT}:16686"
-  echo "Use proof/run_kind_stack.sh proof to run the observability pack via port-forward."
+  echo "Use proof/run_kind_stack.sh smoke for a no-artifact verification pass."
+  echo "Use proof/run_kind_stack.sh proof to generate the observability evidence bundle."
 }
 
 cmd_down() {
@@ -441,6 +460,151 @@ cmd_status() {
   kubectl_ns get jobs
 }
 
+cmd_smoke() {
+  need_cmd kubectl
+  need_cmd curl
+  need_cmd python3
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    prepare_live_model_env
+  fi
+
+  local smoke_tmp
+  smoke_tmp="$(mktemp -d "${TMPDIR:-/tmp}/kind-smoke.XXXXXX")"
+  local api_pf_log="${smoke_tmp}/port-forward-api.log"
+  local gateway_pf_log="${smoke_tmp}/port-forward-gateway.log"
+  local llama_pf_log="${smoke_tmp}/port-forward-llama-server.log"
+  local api_pf_pid=""
+  local gateway_pf_pid=""
+  local llama_pf_pid=""
+
+  cleanup() {
+    if [[ -n "${llama_pf_pid:-}" ]]; then
+      kill "${llama_pf_pid}" >/dev/null 2>&1 || true
+    fi
+    if [[ -n "${gateway_pf_pid:-}" ]]; then
+      kill "${gateway_pf_pid}" >/dev/null 2>&1 || true
+    fi
+    if [[ -n "${api_pf_pid:-}" ]]; then
+      kill "${api_pf_pid}" >/dev/null 2>&1 || true
+    fi
+    rm -rf "${smoke_tmp}"
+  }
+  trap cleanup RETURN
+
+  api_pf_pid="$(start_port_forward "svc/api" "${PHASE2_KIND_API_LOCAL_PORT}:8000" "${api_pf_log}")"
+  gateway_pf_pid="$(start_port_forward "svc/gateway" "${PHASE2_KIND_GATEWAY_LOCAL_PORT}:8080" "${gateway_pf_log}")"
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    llama_pf_pid="$(start_port_forward "svc/llama-server" "${PHASE2_KIND_LLAMA_LOCAL_PORT}:8080" "${llama_pf_log}")"
+  fi
+
+  local api_url="http://127.0.0.1:${PHASE2_KIND_API_LOCAL_PORT}"
+  local gateway_url="http://127.0.0.1:${PHASE2_KIND_GATEWAY_LOCAL_PORT}"
+  local llama_url="http://127.0.0.1:${PHASE2_KIND_LLAMA_LOCAL_PORT}"
+
+  wait_for_url "${api_url}/healthz"
+  wait_for_url "${api_url}/readyz"
+  wait_for_url "${gateway_url}/healthz"
+  wait_for_url "${gateway_url}/readyz"
+  if [[ "${PHASE2_KIND_WORKFLOW}" == "live" ]]; then
+    wait_for_url "${llama_url}/health"
+    curl -fsS "${llama_url}/v1/models" >/dev/null
+  fi
+
+  curl -fsS \
+    -H "X-API-Key: ${PHASE2_PROOF_USER_KEY}" \
+    "${api_url}/v1/models/status" >/dev/null
+
+  local payload
+  payload='{"schema_id":"sroie_receipt_v1","text":"Company: ACME\nDate: 2024-01-01\nTotal: 10.00\nAddress: 123 Main St","temperature":0.0,"max_new_tokens":256,"cache":false,"repair":true}'
+
+  local sync_body="${smoke_tmp}/sync_extract.json"
+  curl -fsS \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: ${PHASE2_PROOF_USER_KEY}" \
+    -H "X-Request-ID: kind-smoke-sync-request" \
+    -H "X-Trace-ID: kind-smoke-sync-trace" \
+    -d "${payload}" \
+    "${gateway_url}/v1/extract" >"${sync_body}"
+
+  local sync_model
+  sync_model="$(python3 - <<'PY' "${sync_body}" "${PHASE2_KIND_WORKFLOW}"
+import json
+import sys
+
+path = sys.argv[1]
+workflow = sys.argv[2]
+payload = json.load(open(path))
+model = str(payload.get("model", ""))
+data = payload.get("data") or {}
+missing = [key for key in ("company", "date", "total") if key not in data]
+if missing:
+    raise SystemExit(f"sync extract missing fields: {', '.join(missing)}")
+if workflow == "live" and "llama.cpp/" not in model:
+    raise SystemExit(f"sync extract did not use live llama.cpp model: {model}")
+print(model)
+PY
+)"
+
+  local submit_body="${smoke_tmp}/async_submit.json"
+  curl -fsS \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: ${PHASE2_PROOF_USER_KEY}" \
+    -H "X-Request-ID: kind-smoke-async-submit-request" \
+    -H "X-Trace-ID: kind-smoke-async-trace" \
+    -d "${payload}" \
+    "${gateway_url}/v1/extract/jobs" >"${submit_body}"
+
+  local job_id
+  job_id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["job_id"])' "${submit_body}")"
+
+  local status_body="${smoke_tmp}/async_status.json"
+  local final_status=""
+  for _ in $(seq 1 80); do
+    curl -fsS \
+      -H "X-API-Key: ${PHASE2_PROOF_USER_KEY}" \
+      -H "X-Request-ID: kind-smoke-async-poll-request" \
+      -H "X-Trace-ID: kind-smoke-async-trace" \
+      "${gateway_url}/v1/extract/jobs/${job_id}" >"${status_body}"
+    final_status="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status",""))' "${status_body}")"
+    if [[ "${final_status}" == "succeeded" ]]; then
+      break
+    fi
+    if [[ "${final_status}" == "failed" ]]; then
+      cat "${status_body}" >&2
+      echo >&2
+      echo "Async extract failed during kind smoke." >&2
+      return 1
+    fi
+    sleep 0.25
+  done
+  if [[ "${final_status}" != "succeeded" ]]; then
+    echo "Timed out waiting for async extract job ${job_id}." >&2
+    return 1
+  fi
+
+  python3 - <<'PY' "${status_body}" "${PHASE2_KIND_WORKFLOW}"
+import json
+import sys
+
+path = sys.argv[1]
+workflow = sys.argv[2]
+payload = json.load(open(path))
+model = str(payload.get("model", ""))
+result = payload.get("result") or {}
+missing = [key for key in ("company", "date", "total") if key not in result]
+if missing:
+    raise SystemExit(f"async extract missing fields: {', '.join(missing)}")
+if workflow == "live" and "llama.cpp/" not in model:
+    raise SystemExit(f"async extract did not use live llama.cpp model: {model}")
+PY
+
+  echo "Kind smoke passed."
+  echo "Workflow: ${PHASE2_KIND_WORKFLOW}"
+  echo "Gateway: ${gateway_url}"
+  echo "Model: ${sync_model}"
+  echo "Async job: ${job_id}"
+}
+
 cmd_proof() {
   need_cmd kubectl
   need_cmd curl
@@ -449,6 +613,7 @@ cmd_proof() {
   fi
 
   clear_proof_outputs
+  copy_runtime_outputs_to_artifacts
   local api_pf_log="${ARTIFACT_DIR}/port-forward-api.log"
   local gateway_pf_log="${ARTIFACT_DIR}/port-forward-gateway.log"
   local jaeger_pf_log="${ARTIFACT_DIR}/port-forward-jaeger.log"
@@ -552,6 +717,7 @@ main() {
     up) shift; cmd_up "$@" ;;
     down) shift; cmd_down "$@" ;;
     status) shift; cmd_status "$@" ;;
+    smoke) shift; cmd_smoke "$@" ;;
     proof) shift; cmd_proof "$@" ;;
     ""|-h|--help|help) usage ;;
     *)
